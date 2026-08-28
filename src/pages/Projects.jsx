@@ -25,10 +25,16 @@ export default function Projects() {
   const [clients, setClients] = useState([]);
   const [deals, setDeals] = useState([]);
   const [milestones, setMilestones] = useState({});
+  const [members, setMembers] = useState({});
+  const [users, setUsers] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
   const [milestoneForm, setMilestoneForm] = useState({
     title: "",
     due_date: "",
+  });
+  const [memberForm, setMemberForm] = useState({
+    user_id: "",
+    role: "developer",
   });
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -43,23 +49,31 @@ export default function Projects() {
   const [error, setError] = useState("");
 
   async function load() {
-    const [projectResult, clientResult, dealResult, milestoneResult] =
-      await Promise.all([
-        supabase
-          .from("projects")
-          .select("*, clients(name)")
-          .order("created_at", { ascending: false }),
-        supabase.from("clients").select("id,name").order("name"),
-        supabase
-          .from("deals")
-          .select("id,title,client_id")
-          .eq("stage", "won")
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("project_milestones")
-          .select("*")
-          .order("due_date", { ascending: true }),
-      ]);
+    const [
+      projectResult,
+      clientResult,
+      dealResult,
+      milestoneResult,
+      memberResult,
+      userResult,
+    ] = await Promise.all([
+      supabase
+        .from("projects")
+        .select("*, clients(name)")
+        .order("created_at", { ascending: false }),
+      supabase.from("clients").select("id,name").order("name"),
+      supabase
+        .from("deals")
+        .select("id,title,client_id")
+        .eq("stage", "won")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("project_milestones")
+        .select("*")
+        .order("due_date", { ascending: true }),
+      supabase.from("project_members").select("*, users(name, email, role)"),
+      supabase.from("users").select("id, name, email, role").order("name"),
+    ]);
     setProjects(projectResult.data ?? []);
     setClients(clientResult.data ?? []);
     setDeals(dealResult.data ?? []);
@@ -72,6 +86,16 @@ export default function Projects() {
         return grouped;
       }, {}),
     );
+    setMembers(
+      (memberResult.data ?? []).reduce((grouped, member) => {
+        grouped[member.project_id] = [
+          ...(grouped[member.project_id] || []),
+          member,
+        ];
+        return grouped;
+      }, {}),
+    );
+    setUsers(userResult.data ?? []);
   }
 
   useEffect(() => {
@@ -150,6 +174,31 @@ export default function Projects() {
         status: milestone.status === "completed" ? "pending" : "completed",
       })
       .eq("id", milestone.id);
+    load();
+  }
+
+  async function addMember(event, projectId) {
+    event.preventDefault();
+    if (!memberForm.user_id) return;
+    const { error: insertError } = await supabase
+      .from("project_members")
+      .insert([
+        {
+          project_id: projectId,
+          user_id: memberForm.user_id,
+          role: memberForm.role,
+        },
+      ]);
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+    setMemberForm({ user_id: "", role: "developer" });
+    load();
+  }
+
+  async function removeMember(memberId) {
+    await supabase.from("project_members").delete().eq("id", memberId);
     load();
   }
 
@@ -335,6 +384,89 @@ export default function Projects() {
                     {(milestones[project.id] || []).length === 0 && (
                       <p className="text-xs text-ink/40">No milestones yet.</p>
                     )}
+                  </div>
+                  <div className="border-t border-line pt-3 mb-3">
+                    <p className="text-xs font-medium mb-2">Team</p>
+                    <div className="space-y-1 mb-2">
+                      {(members[project.id] || []).map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between text-xs"
+                        >
+                          <span>
+                            {member.users?.name ||
+                              member.users?.email ||
+                              "Unknown user"}{" "}
+                            <span className="text-ink/40 capitalize">
+                              ({member.role.replace("-", " ")})
+                            </span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeMember(member.id)}
+                            className="text-danger/70 hover:text-danger"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      {(members[project.id] || []).length === 0 && (
+                        <p className="text-xs text-ink/40">
+                          No team members assigned.
+                        </p>
+                      )}
+                    </div>
+                    <form
+                      onSubmit={(event) => addMember(event, project.id)}
+                      className="flex gap-2 flex-wrap"
+                    >
+                      <select
+                        value={memberForm.user_id}
+                        onChange={(event) =>
+                          setMemberForm({
+                            ...memberForm,
+                            user_id: event.target.value,
+                          })
+                        }
+                        className="border border-line rounded-lg px-3 py-1.5 text-xs flex-1 min-w-[160px]"
+                      >
+                        <option value="">Choose team member...</option>
+                        {users
+                          .filter(
+                            (member) =>
+                              !(members[project.id] || []).some(
+                                (assigned) => assigned.user_id === member.id,
+                              ),
+                          )
+                          .map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {member.name || member.email}
+                            </option>
+                          ))}
+                      </select>
+                      <select
+                        value={memberForm.role}
+                        onChange={(event) =>
+                          setMemberForm({
+                            ...memberForm,
+                            role: event.target.value,
+                          })
+                        }
+                        className="border border-line rounded-lg px-3 py-1.5 text-xs"
+                      >
+                        <option value="project-manager">Project manager</option>
+                        <option value="developer">Developer</option>
+                        <option value="designer">Designer</option>
+                        <option value="qa">QA</option>
+                        <option value="support">Support</option>
+                      </select>
+                      <button
+                        type="submit"
+                        className="bg-accent text-white rounded-lg px-3 py-1.5 text-xs"
+                      >
+                        Assign
+                      </button>
+                    </form>
                   </div>
                   <form
                     onSubmit={(event) => addMilestone(event, project.id)}
