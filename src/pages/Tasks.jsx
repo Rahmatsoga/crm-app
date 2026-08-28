@@ -1,60 +1,75 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
-import { useAuth } from '../context/AuthContext'
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../context/AuthContext";
 
 export default function Tasks() {
-  const { user } = useAuth()
-  const [tasks, setTasks] = useState([])
-  const [clients, setClients] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ title: '', client_id: '', due_date: '' })
-  const [filter, setFilter] = useState('pending')
-  const [error, setError] = useState('')
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    client_id: "",
+    project_id: "",
+    due_date: "",
+  });
+  const [filter, setFilter] = useState("pending");
+  const [error, setError] = useState("");
 
   async function load() {
-    const [t, c] = await Promise.all([
-      supabase.from('tasks').select('*, clients(name)').order('due_date', { ascending: true }),
-      supabase.from('clients').select('id,name').order('name'),
-    ])
-    setTasks(t.data ?? [])
-    setClients(c.data ?? [])
+    const [t, c, p] = await Promise.all([
+      supabase
+        .from("tasks")
+        .select("*, clients(name), projects(name)")
+        .order("due_date", { ascending: true }),
+      supabase.from("clients").select("id,name").order("name"),
+      supabase.from("projects").select("id,name,client_id").order("name"),
+    ]);
+    setTasks(t.data ?? []);
+    setClients(c.data ?? []);
+    setProjects(p.data ?? []);
   }
 
   useEffect(() => {
-    load()
-  }, [])
+    load();
+  }, []);
 
   async function handleAddTask(e) {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError("");
     if (!form.title.trim()) {
-      setError('Task title is required.')
-      return
+      setError("Task title is required.");
+      return;
     }
-    const { error } = await supabase.from('tasks').insert([
+    const { error } = await supabase.from("tasks").insert([
       {
         title: form.title,
         client_id: form.client_id || null,
+        project_id: form.project_id || null,
         due_date: form.due_date || null,
         assigned_to: user.id,
-        status: 'pending',
+        status: "pending",
       },
-    ])
+    ]);
     if (error) {
-      setError(error.message)
-      return
+      setError(error.message);
+      return;
     }
-    setForm({ title: '', client_id: '', due_date: '' })
-    setShowForm(false)
-    load()
+    setForm({ title: "", client_id: "", project_id: "", due_date: "" });
+    setShowForm(false);
+    load();
   }
 
   async function toggleDone(task) {
-    await supabase.from('tasks').update({ status: task.status === 'done' ? 'pending' : 'done' }).eq('id', task.id)
-    load()
+    await supabase
+      .from("tasks")
+      .update({ status: task.status === "done" ? "pending" : "done" })
+      .eq("id", task.id);
+    load();
   }
 
-  const filtered = tasks.filter((t) => filter === 'all' || t.status === filter)
+  const filtered = tasks.filter((t) => filter === "all" || t.status === filter);
 
   return (
     <div className="p-8 max-w-3xl">
@@ -67,12 +82,15 @@ export default function Tasks() {
           onClick={() => setShowForm((v) => !v)}
           className="bg-ink text-white text-sm font-medium rounded-lg px-4 py-2 hover:opacity-90"
         >
-          {showForm ? 'Cancel' : 'Add task'}
+          {showForm ? "Cancel" : "Add task"}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleAddTask} className="bg-white border border-line rounded-xl p-4 mb-6 flex gap-3 flex-wrap">
+        <form
+          onSubmit={handleAddTask}
+          className="bg-white border border-line rounded-xl p-4 mb-6 flex gap-3 flex-wrap"
+        >
           <input
             placeholder="Task title"
             value={form.title}
@@ -86,8 +104,24 @@ export default function Tasks() {
           >
             <option value="">No client</option>
             {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
+          </select>
+          <select
+            value={form.project_id}
+            onChange={(e) => setForm({ ...form, project_id: e.target.value })}
+            className="border border-line rounded-lg px-3 py-2 text-sm"
+          >
+            <option value="">No project</option>
+            {projects
+              .filter((p) => !form.client_id || p.client_id === form.client_id)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
           </select>
           <input
             type="date"
@@ -95,7 +129,10 @@ export default function Tasks() {
             onChange={(e) => setForm({ ...form, due_date: e.target.value })}
             className="border border-line rounded-lg px-3 py-2 text-sm"
           />
-          <button type="submit" className="bg-accent text-white text-sm font-medium rounded-lg px-4 py-2">
+          <button
+            type="submit"
+            className="bg-accent text-white text-sm font-medium rounded-lg px-4 py-2"
+          >
             Save task
           </button>
           {error && <p className="w-full text-xs text-danger">{error}</p>}
@@ -103,12 +140,14 @@ export default function Tasks() {
       )}
 
       <div className="flex gap-2 mb-4">
-        {['pending', 'done', 'all'].map((f) => (
+        {["pending", "done", "all"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`text-xs px-3 py-1.5 rounded-lg border capitalize ${
-              filter === f ? 'bg-ink text-white border-ink' : 'border-line text-ink/60'
+              filter === f
+                ? "bg-ink text-white border-ink"
+                : "border-line text-ink/60"
             }`}
           >
             {f}
@@ -118,27 +157,42 @@ export default function Tasks() {
 
       <div className="bg-white border border-line rounded-xl overflow-hidden">
         {filtered.length === 0 ? (
-          <p className="text-sm text-ink/40 px-4 py-8 text-center">No tasks here.</p>
+          <p className="text-sm text-ink/40 px-4 py-8 text-center">
+            No tasks here.
+          </p>
         ) : (
           filtered.map((t) => (
-            <div key={t.id} className="flex items-center gap-3 px-4 py-3 border-b border-line last:border-0">
+            <div
+              key={t.id}
+              className="flex items-center gap-3 px-4 py-3 border-b border-line last:border-0"
+            >
               <input
                 type="checkbox"
-                checked={t.status === 'done'}
+                checked={t.status === "done"}
                 onChange={() => toggleDone(t)}
                 className="h-4 w-4 accent-accent"
               />
               <div className="flex-1">
-                <p className={`text-sm ${t.status === 'done' ? 'line-through text-ink/40' : ''}`}>{t.title}</p>
-                <p className="text-xs text-ink/50">{t.clients?.name || 'No client'}</p>
+                <p
+                  className={`text-sm ${t.status === "done" ? "line-through text-ink/40" : ""}`}
+                >
+                  {t.title}
+                </p>
+                <p className="text-xs text-ink/50">
+                  {t.projects?.name ||
+                    t.clients?.name ||
+                    "No client or project"}
+                </p>
               </div>
               <span className="text-xs text-ink/40">
-                {t.due_date ? new Date(t.due_date).toLocaleDateString() : 'No due date'}
+                {t.due_date
+                  ? new Date(t.due_date).toLocaleDateString()
+                  : "No due date"}
               </span>
             </div>
           ))
         )}
       </div>
     </div>
-  )
+  );
 }

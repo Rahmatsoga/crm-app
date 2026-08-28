@@ -95,6 +95,7 @@ create table public.interactions (
 create table public.tasks (
   id uuid primary key default uuid_generate_v4(),
   client_id uuid references public.clients(id) on delete set null,
+  project_id uuid references public.projects(id) on delete cascade,
   assigned_to uuid references public.users(id),
   title text not null,
   due_date timestamp with time zone,
