@@ -7,6 +7,8 @@ import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Pipeline from "./pages/Pipeline";
 import Projects from "./pages/Projects";
+import Invoices from "./pages/Invoices";
+import Documents from "./pages/Documents";
 import Tasks from "./pages/Tasks";
 import Tickets from "./pages/Tickets";
 
@@ -40,6 +42,8 @@ function AppRoutes() {
         <Route path="clients/:id" element={<ClientDetail />} />
         <Route path="pipeline" element={<Pipeline />} />
         <Route path="projects" element={<Projects />} />
+        <Route path="invoices" element={<Invoices />} />
+        <Route path="documents" element={<Documents />} />
         <Route path="tasks" element={<Tasks />} />
         <Route path="tickets" element={<Tickets />} />
       </Route>

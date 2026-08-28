@@ -78,7 +78,24 @@ create table public.project_milestones (
 );
 
 -- ============================================
--- 6. INTERACTIONS (activity log)
+-- 6. INVOICES
+-- ============================================
+create table public.invoices (
+  id uuid primary key default uuid_generate_v4(),
+  invoice_number text not null unique,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  project_id uuid references public.projects(id) on delete set null,
+  amount numeric not null default 0,
+  status text not null default 'draft' check (status in ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
+  issue_date date default current_date,
+  due_date date,
+  notes text,
+  created_by uuid references public.users(id),
+  created_at timestamp with time zone default now()
+);
+
+-- ============================================
+-- 7. INTERACTIONS (activity log)
 -- ============================================
 create table public.interactions (
   id uuid primary key default uuid_generate_v4(),
@@ -90,7 +107,7 @@ create table public.interactions (
 );
 
 -- ============================================
--- 7. TASKS (follow-up reminders)
+-- 8. TASKS (follow-up reminders)
 -- ============================================
 create table public.tasks (
   id uuid primary key default uuid_generate_v4(),
@@ -104,18 +121,21 @@ create table public.tasks (
 );
 
 -- ============================================
--- 8. DOCUMENTS
+-- 9. DOCUMENTS
 -- ============================================
 create table public.documents (
   id uuid primary key default uuid_generate_v4(),
   client_id uuid references public.clients(id) on delete cascade,
+  project_id uuid references public.projects(id) on delete cascade,
+  file_name text not null,
+  storage_path text,
   file_url text not null,
   uploaded_by uuid references public.users(id),
   uploaded_at timestamp with time zone default now()
 );
 
 -- ============================================
--- 9. TICKETS (support system)
+-- 10. TICKETS (support system)
 -- ============================================
 create table public.tickets (
   id uuid primary key default uuid_generate_v4(),
@@ -137,6 +157,7 @@ alter table public.clients enable row level security;
 alter table public.deals enable row level security;
 alter table public.projects enable row level security;
 alter table public.project_milestones enable row level security;
+alter table public.invoices enable row level security;
 alter table public.interactions enable row level security;
 alter table public.tasks enable row level security;
 alter table public.documents enable row level security;
@@ -160,6 +181,9 @@ create policy "Authenticated users can manage projects" on public.projects
 create policy "Authenticated users can manage project milestones" on public.project_milestones
   for all using (auth.role() = 'authenticated');
 
+create policy "Authenticated users can manage invoices" on public.invoices
+  for all using (auth.role() = 'authenticated');
+
 create policy "Authenticated users can manage interactions" on public.interactions
   for all using (auth.role() = 'authenticated');
 
@@ -168,6 +192,25 @@ create policy "Authenticated users can manage tasks" on public.tasks
 
 create policy "Authenticated users can manage documents" on public.documents
   for all using (auth.role() = 'authenticated');
+
+insert into storage.buckets (id, name, public)
+values ('project-documents', 'project-documents', true)
+on conflict (id) do nothing;
+
+create policy "Authenticated users can upload project documents"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'project-documents');
+
+create policy "Authenticated users can view project documents"
+on storage.objects for select
+to authenticated
+using (bucket_id = 'project-documents');
+
+create policy "Authenticated users can delete project documents"
+on storage.objects for delete
+to authenticated
+using (bucket_id = 'project-documents');
 
 create policy "Authenticated users can manage tickets" on public.tickets
   for all using (auth.role() = 'authenticated');
