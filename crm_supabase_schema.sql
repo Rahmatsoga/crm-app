@@ -177,6 +177,17 @@ create table public.tickets (
 -- ============================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================
+-- Role helper for consistent access checks
+create or replace function public.current_user_role()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.users where id = auth.uid();
+$$;
+
 -- Enable RLS on all tables
 alter table public.users enable row level security;
 alter table public.clients enable row level security;
@@ -191,41 +202,97 @@ alter table public.tasks enable row level security;
 alter table public.documents enable row level security;
 alter table public.tickets enable row level security;
 
--- Basic policy: any logged-in user can read/write (simplest version for a student project)
--- You can tighten these later per-role once the app works end-to-end.
+-- Profile access
+create policy "Users can view their own profile" on public.users
+  for select using (id = auth.uid());
 
-create policy "Authenticated users can view users" on public.users
+create policy "Admins can manage all profiles" on public.users
+  for all using (public.current_user_role() = 'admin');
+
+-- Shared read access for authenticated users
+create policy "Authenticated users can read clients" on public.clients
   for select using (auth.role() = 'authenticated');
 
-create policy "Authenticated users can manage clients" on public.clients
-  for all using (auth.role() = 'authenticated');
+create policy "Admins and sales can manage clients" on public.clients
+  for insert with check (public.current_user_role() in ('admin', 'sales'));
 
-create policy "Authenticated users can manage deals" on public.deals
-  for all using (auth.role() = 'authenticated');
+create policy "Admins and sales can update clients" on public.clients
+  for update using (public.current_user_role() in ('admin', 'sales'));
 
-create policy "Authenticated users can manage projects" on public.projects
-  for all using (auth.role() = 'authenticated');
+create policy "Admins and sales can delete clients" on public.clients
+  for delete using (public.current_user_role() in ('admin', 'sales'));
 
-create policy "Authenticated users can manage project milestones" on public.project_milestones
-  for all using (auth.role() = 'authenticated');
+create policy "Authenticated users can read deals" on public.deals
+  for select using (auth.role() = 'authenticated');
 
-create policy "Authenticated users can manage invoices" on public.invoices
-  for all using (auth.role() = 'authenticated');
+create policy "Admins and sales can manage deals" on public.deals
+  for all using (public.current_user_role() in ('admin', 'sales'));
 
-create policy "Authenticated users can manage project members" on public.project_members
-  for all using (auth.role() = 'authenticated');
+create policy "Authenticated users can read projects" on public.projects
+  for select using (auth.role() = 'authenticated');
 
-create policy "Authenticated users can manage project updates" on public.project_updates
-  for all using (auth.role() = 'authenticated');
+create policy "Admins and sales can manage projects" on public.projects
+  for all using (public.current_user_role() in ('admin', 'sales'));
 
-create policy "Authenticated users can manage interactions" on public.interactions
-  for all using (auth.role() = 'authenticated');
+create policy "Authenticated users can read project milestones" on public.project_milestones
+  for select using (auth.role() = 'authenticated');
 
-create policy "Authenticated users can manage tasks" on public.tasks
-  for all using (auth.role() = 'authenticated');
+create policy "Admins and sales can manage milestones" on public.project_milestones
+  for all using (public.current_user_role() in ('admin', 'sales'));
 
-create policy "Authenticated users can manage documents" on public.documents
-  for all using (auth.role() = 'authenticated');
+create policy "Authenticated users can read invoices" on public.invoices
+  for select using (auth.role() = 'authenticated');
+
+create policy "Admins and sales can manage invoices" on public.invoices
+  for all using (public.current_user_role() in ('admin', 'sales'));
+
+create policy "Authenticated users can read project members" on public.project_members
+  for select using (auth.role() = 'authenticated');
+
+create policy "Admins and sales can manage project members" on public.project_members
+  for all using (public.current_user_role() in ('admin', 'sales'));
+
+create policy "Authenticated users can read project updates" on public.project_updates
+  for select using (auth.role() = 'authenticated');
+
+create policy "Admins and sales can manage project updates" on public.project_updates
+  for all using (public.current_user_role() in ('admin', 'sales'));
+
+create policy "Authenticated users can read interactions" on public.interactions
+  for select using (auth.role() = 'authenticated');
+
+create policy "Admins and sales can manage interactions" on public.interactions
+  for all using (public.current_user_role() in ('admin', 'sales'));
+
+create policy "Authenticated users can read tasks" on public.tasks
+  for select using (auth.role() = 'authenticated');
+
+create policy "Team members can manage tasks" on public.tasks
+  for insert with check (public.current_user_role() in ('admin', 'sales', 'support'));
+
+create policy "Team members can update tasks" on public.tasks
+  for update using (public.current_user_role() in ('admin', 'sales', 'support'));
+
+create policy "Admins can delete tasks" on public.tasks
+  for delete using (public.current_user_role() = 'admin');
+
+create policy "Authenticated users can read documents" on public.documents
+  for select using (auth.role() = 'authenticated');
+
+create policy "Admins and sales can manage documents" on public.documents
+  for all using (public.current_user_role() in ('admin', 'sales'));
+
+create policy "Authenticated users can read tickets" on public.tickets
+  for select using (auth.role() = 'authenticated');
+
+create policy "Team members can manage tickets" on public.tickets
+  for insert with check (public.current_user_role() in ('admin', 'sales', 'support'));
+
+create policy "Team members can update tickets" on public.tickets
+  for update using (public.current_user_role() in ('admin', 'sales', 'support'));
+
+create policy "Admins can delete tickets" on public.tickets
+  for delete using (public.current_user_role() = 'admin');
 
 insert into storage.buckets (id, name, public)
 values ('project-documents', 'project-documents', true)
@@ -245,9 +312,6 @@ create policy "Authenticated users can delete project documents"
 on storage.objects for delete
 to authenticated
 using (bucket_id = 'project-documents');
-
-create policy "Authenticated users can manage tickets" on public.tickets
-  for all using (auth.role() = 'authenticated');
 
 -- ============================================
 -- OPTIONAL: Auto-create a public.users row when someone signs up via Supabase Auth
