@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+@theme {
+  --color-ink: #1c1c1a;
+  --color-paper: #faf9f6;
+  --color-line: #e4e2db;
+  --color-accent: #2f5d50;
+  --color-accentSoft: #e7efe9;
+  --color-warn: #b3541e;
+  --color-warnSoft: #f7ead9;
+  --color-danger: #a3312c;
+  --color-dangerSoft: #f6e4e2;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #faf9f6;
+  color: #1c1c1a;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d8d5cb;
+  border-radius: 4px;
+}
