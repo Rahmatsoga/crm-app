@@ -108,7 +108,20 @@ create table public.project_members (
 );
 
 -- ============================================
--- 8. INTERACTIONS (activity log)
+-- 8. PROJECT UPDATES
+-- ============================================
+create table public.project_updates (
+  id uuid primary key default uuid_generate_v4(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  created_by uuid not null references public.users(id),
+  type text not null default 'update'
+    check (type in ('update', 'meeting', 'decision', 'blocker')),
+  message text not null,
+  created_at timestamp with time zone default now()
+);
+
+-- ============================================
+-- 9. INTERACTIONS (activity log)
 -- ============================================
 create table public.interactions (
   id uuid primary key default uuid_generate_v4(),
@@ -120,7 +133,7 @@ create table public.interactions (
 );
 
 -- ============================================
--- 9. TASKS (follow-up reminders)
+-- 10. TASKS (follow-up reminders)
 -- ============================================
 create table public.tasks (
   id uuid primary key default uuid_generate_v4(),
@@ -134,7 +147,7 @@ create table public.tasks (
 );
 
 -- ============================================
--- 10. DOCUMENTS
+-- 11. DOCUMENTS
 -- ============================================
 create table public.documents (
   id uuid primary key default uuid_generate_v4(),
@@ -148,7 +161,7 @@ create table public.documents (
 );
 
 -- ============================================
--- 11. TICKETS (support system)
+-- 12. TICKETS (support system)
 -- ============================================
 create table public.tickets (
   id uuid primary key default uuid_generate_v4(),
@@ -172,6 +185,7 @@ alter table public.projects enable row level security;
 alter table public.project_milestones enable row level security;
 alter table public.invoices enable row level security;
 alter table public.project_members enable row level security;
+alter table public.project_updates enable row level security;
 alter table public.interactions enable row level security;
 alter table public.tasks enable row level security;
 alter table public.documents enable row level security;
@@ -199,6 +213,9 @@ create policy "Authenticated users can manage invoices" on public.invoices
   for all using (auth.role() = 'authenticated');
 
 create policy "Authenticated users can manage project members" on public.project_members
+  for all using (auth.role() = 'authenticated');
+
+create policy "Authenticated users can manage project updates" on public.project_updates
   for all using (auth.role() = 'authenticated');
 
 create policy "Authenticated users can manage interactions" on public.interactions

@@ -27,6 +27,7 @@ export default function Projects() {
   const [milestones, setMilestones] = useState({});
   const [members, setMembers] = useState({});
   const [users, setUsers] = useState([]);
+  const [updates, setUpdates] = useState({});
   const [expandedProject, setExpandedProject] = useState(null);
   const [milestoneForm, setMilestoneForm] = useState({
     title: "",
@@ -35,6 +36,10 @@ export default function Projects() {
   const [memberForm, setMemberForm] = useState({
     user_id: "",
     role: "developer",
+  });
+  const [updateForm, setUpdateForm] = useState({
+    type: "update",
+    message: "",
   });
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -56,6 +61,7 @@ export default function Projects() {
       milestoneResult,
       memberResult,
       userResult,
+      updateResult,
     ] = await Promise.all([
       supabase
         .from("projects")
@@ -73,6 +79,10 @@ export default function Projects() {
         .order("due_date", { ascending: true }),
       supabase.from("project_members").select("*, users(name, email, role)"),
       supabase.from("users").select("id, name, email, role").order("name"),
+      supabase
+        .from("project_updates")
+        .select("*, users(name)")
+        .order("created_at", { ascending: false }),
     ]);
     setProjects(projectResult.data ?? []);
     setClients(clientResult.data ?? []);
@@ -96,13 +106,22 @@ export default function Projects() {
       }, {}),
     );
     setUsers(userResult.data ?? []);
+    setUpdates(
+      (updateResult.data ?? []).reduce((grouped, update) => {
+        grouped[update.project_id] = [
+          ...(grouped[update.project_id] || []),
+          update,
+        ];
+        return grouped;
+      }, {}),
+    );
   }
 
   useEffect(() => {
     load();
   }, []);
 
-  function updateForm(field, value) {
+  function updateProjectForm(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -202,6 +221,27 @@ export default function Projects() {
     load();
   }
 
+  async function addUpdate(event, projectId) {
+    event.preventDefault();
+    if (!updateForm.message.trim()) return;
+    const { error: insertError } = await supabase
+      .from("project_updates")
+      .insert([
+        {
+          project_id: projectId,
+          created_by: user.id,
+          type: updateForm.type,
+          message: updateForm.message.trim(),
+        },
+      ]);
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+    setUpdateForm({ type: "update", message: "" });
+    load();
+  }
+
   return (
     <div className="p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
@@ -225,12 +265,14 @@ export default function Projects() {
           <input
             placeholder="Project name"
             value={form.name}
-            onChange={(event) => updateForm("name", event.target.value)}
+            onChange={(event) => updateProjectForm("name", event.target.value)}
             className="border border-line rounded-lg px-3 py-2 text-sm"
           />
           <select
             value={form.client_id}
-            onChange={(event) => updateForm("client_id", event.target.value)}
+            onChange={(event) =>
+              updateProjectForm("client_id", event.target.value)
+            }
             className="border border-line rounded-lg px-3 py-2 text-sm"
           >
             <option value="">Select client...</option>
@@ -242,7 +284,9 @@ export default function Projects() {
           </select>
           <select
             value={form.deal_id}
-            onChange={(event) => updateForm("deal_id", event.target.value)}
+            onChange={(event) =>
+              updateProjectForm("deal_id", event.target.value)
+            }
             className="border border-line rounded-lg px-3 py-2 text-sm"
           >
             <option value="">Won deal (optional)...</option>
@@ -261,25 +305,33 @@ export default function Projects() {
             min="0"
             placeholder="Budget ($)"
             value={form.budget}
-            onChange={(event) => updateForm("budget", event.target.value)}
+            onChange={(event) =>
+              updateProjectForm("budget", event.target.value)
+            }
             className="border border-line rounded-lg px-3 py-2 text-sm"
           />
           <input
             type="date"
             value={form.start_date}
-            onChange={(event) => updateForm("start_date", event.target.value)}
+            onChange={(event) =>
+              updateProjectForm("start_date", event.target.value)
+            }
             className="border border-line rounded-lg px-3 py-2 text-sm"
           />
           <input
             type="date"
             value={form.due_date}
-            onChange={(event) => updateForm("due_date", event.target.value)}
+            onChange={(event) =>
+              updateProjectForm("due_date", event.target.value)
+            }
             className="border border-line rounded-lg px-3 py-2 text-sm"
           />
           <textarea
             placeholder="Description (optional)"
             value={form.description}
-            onChange={(event) => updateForm("description", event.target.value)}
+            onChange={(event) =>
+              updateProjectForm("description", event.target.value)
+            }
             className="border border-line rounded-lg px-3 py-2 text-sm col-span-2"
             rows="2"
           />
@@ -465,6 +517,63 @@ export default function Projects() {
                         className="bg-accent text-white rounded-lg px-3 py-1.5 text-xs"
                       >
                         Assign
+                      </button>
+                    </form>
+                  </div>
+                  <div className="border-t border-line pt-3 mb-3">
+                    <p className="text-xs font-medium mb-2">Project updates</p>
+                    <div className="space-y-2 mb-3">
+                      {(updates[project.id] || []).map((update) => (
+                        <div key={update.id} className="text-xs">
+                          <div className="flex items-center gap-2 text-ink/40 mb-0.5">
+                            <span className="capitalize">{update.type}</span>
+                            <span>{update.users?.name || "Team member"}</span>
+                            <span>
+                              {new Date(update.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p>{update.message}</p>
+                        </div>
+                      ))}
+                      {(updates[project.id] || []).length === 0 && (
+                        <p className="text-xs text-ink/40">No updates yet.</p>
+                      )}
+                    </div>
+                    <form
+                      onSubmit={(event) => addUpdate(event, project.id)}
+                      className="grid grid-cols-[auto_1fr_auto] gap-2"
+                    >
+                      <select
+                        value={updateForm.type}
+                        onChange={(event) =>
+                          setUpdateForm({
+                            ...updateForm,
+                            type: event.target.value,
+                          })
+                        }
+                        className="border border-line rounded-lg px-2 py-1.5 text-xs"
+                      >
+                        <option value="update">Update</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="decision">Decision</option>
+                        <option value="blocker">Blocker</option>
+                      </select>
+                      <input
+                        placeholder="Share a project update..."
+                        value={updateForm.message}
+                        onChange={(event) =>
+                          setUpdateForm({
+                            ...updateForm,
+                            message: event.target.value,
+                          })
+                        }
+                        className="border border-line rounded-lg px-3 py-1.5 text-xs min-w-0"
+                      />
+                      <button
+                        type="submit"
+                        className="bg-accent text-white rounded-lg px-3 py-1.5 text-xs"
+                      >
+                        Post
                       </button>
                     </form>
                   </div>
