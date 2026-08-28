@@ -48,7 +48,37 @@ create table public.deals (
 );
 
 -- ============================================
--- 4. INTERACTIONS (activity log)
+-- 4. PROJECTS (delivery work created from won deals)
+-- ============================================
+create table public.projects (
+  id uuid primary key default uuid_generate_v4(),
+  client_id uuid references public.clients(id) on delete cascade,
+  deal_id uuid references public.deals(id) on delete set null,
+  name text not null,
+  description text,
+  status text not null default 'planning' check (status in ('planning', 'in-progress', 'on-hold', 'completed', 'cancelled')),
+  budget numeric default 0,
+  start_date date,
+  due_date date,
+  created_by uuid references public.users(id),
+  created_at timestamp with time zone default now()
+);
+
+-- ============================================
+-- 5. PROJECT MILESTONES
+-- ============================================
+create table public.project_milestones (
+  id uuid primary key default uuid_generate_v4(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  title text not null,
+  description text,
+  due_date date,
+  status text not null default 'pending' check (status in ('pending', 'completed')),
+  created_at timestamp with time zone default now()
+);
+
+-- ============================================
+-- 6. INTERACTIONS (activity log)
 -- ============================================
 create table public.interactions (
   id uuid primary key default uuid_generate_v4(),
@@ -60,7 +90,7 @@ create table public.interactions (
 );
 
 -- ============================================
--- 5. TASKS (follow-up reminders)
+-- 7. TASKS (follow-up reminders)
 -- ============================================
 create table public.tasks (
   id uuid primary key default uuid_generate_v4(),
@@ -73,7 +103,7 @@ create table public.tasks (
 );
 
 -- ============================================
--- 6. DOCUMENTS
+-- 8. DOCUMENTS
 -- ============================================
 create table public.documents (
   id uuid primary key default uuid_generate_v4(),
@@ -84,7 +114,7 @@ create table public.documents (
 );
 
 -- ============================================
--- 7. TICKETS (support system)
+-- 9. TICKETS (support system)
 -- ============================================
 create table public.tickets (
   id uuid primary key default uuid_generate_v4(),
@@ -104,6 +134,8 @@ create table public.tickets (
 alter table public.users enable row level security;
 alter table public.clients enable row level security;
 alter table public.deals enable row level security;
+alter table public.projects enable row level security;
+alter table public.project_milestones enable row level security;
 alter table public.interactions enable row level security;
 alter table public.tasks enable row level security;
 alter table public.documents enable row level security;
@@ -119,6 +151,12 @@ create policy "Authenticated users can manage clients" on public.clients
   for all using (auth.role() = 'authenticated');
 
 create policy "Authenticated users can manage deals" on public.deals
+  for all using (auth.role() = 'authenticated');
+
+create policy "Authenticated users can manage projects" on public.projects
+  for all using (auth.role() = 'authenticated');
+
+create policy "Authenticated users can manage project milestones" on public.project_milestones
   for all using (auth.role() = 'authenticated');
 
 create policy "Authenticated users can manage interactions" on public.interactions
