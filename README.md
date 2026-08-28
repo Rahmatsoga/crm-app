@@ -1,46 +1,81 @@
-# XYZ Software House — CRM (Core)
+# XYZ Software House — CRM
 
-A working CRM built with React + Vite + Supabase, covering the core (must-have) functionalities:
-auth, clients, sales pipeline, activity log, tasks, and support tickets.
+A working CRM built with React + Vite + Supabase for client management, sales pipeline tracking, project delivery, tasks, tickets, documents, and dashboard reporting.
+
+## Stack
+
+- React + Vite
+- Supabase Auth
+- Supabase Postgres
+- Supabase Storage
+- React Router
 
 ## Setup
 
-1. **Install dependencies**
-   ```
+1. Install dependencies
+
+   ```bash
    npm install
    ```
 
-2. **Set up Supabase**
-   - Create a project at https://supabase.com
-   - In the SQL Editor, run the `crm_supabase_schema.sql` file (provided separately) to create all tables + policies
-   - Go to Project Settings > API and copy your Project URL and anon public key
+2. Create a Supabase project
+   - Go to https://supabase.com
+   - Create a new project
+   - Open SQL Editor and run the schema from `crm_supabase_schema.sql`
+   - Go to Project Settings > API and copy the project URL and anon key
 
-3. **Configure environment variables**
-   - Copy `.env.example` to `.env`
-   - Fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+3. Configure environment variables
 
-4. **Run the app**
+   ```bash
+   cp .env.example .env
    ```
+
+   Then update the file with:
+
+   ```env
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+
+4. Run the app
+
+   ```bash
    npm run dev
    ```
 
-5. **First login**
-   - Sign up with your email — you'll be created with the `sales` role by default
-   - In Supabase's Table Editor, open the `users` table and change your row's `role` to `admin`
+5. First login flow
+   - Sign up with your email
+   - New users are created as `sales` by default
+   - In Supabase Table Editor, update your row in `public.users` to `admin` if you want admin access
 
-## What's implemented (core/must-have)
+## Current features
 
-- Email/password auth (Supabase Auth) with role field (admin / sales / support)
-- Clients: list, search, filter by status, add, detail view
-- Client detail: activity log (calls/emails/meetings/notes), linked deals, tasks, tickets
-- Pipeline: kanban-style view of deals across stages (new → contacted → proposal → negotiation → won/lost)
-- Tasks: follow-up reminders with due dates, filter by pending/done
-- Tickets: support ticket tracking with priority + status
+- Email/password auth with role-based access
+- Client directory with search and filters
+- Client detail pages with related records
+- Sales pipeline with stage progression
+- Project tracking for won deals
+- Task management with due dates and status filtering
+- Ticket management for support cases
+- Document upload and file storage
+- Dashboard with KPI and pipeline overview
 
-## Not yet built (nice-to-have, next phase)
+## Role access model
 
-- Documents/file upload (Supabase Storage)
-- Email/SMS notifications
-- Analytics dashboard charts
-- Role-based row-level restrictions (RLS currently allows any logged-in user full access — see schema notes)
-- Client self-service portal
+- `admin`: full access
+- `sales`: sales and client workflows
+- `support`: tasks and tickets workflows
+
+## Production notes
+
+- The frontend now includes role-based UI access gating
+- Supabase RLS should be tightened further in production once the project is deployed in a real environment
+- The app is designed as a working MVP and can be expanded with notifications, analytics, and deeper automations
+
+## Next phase ideas
+
+- reporting and exports
+- advanced analytics dashboards
+- automation for reminders and follow-ups
+- richer document management
+- deployment hardening and CI/CD

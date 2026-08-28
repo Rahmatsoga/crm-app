@@ -1,57 +1,99 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "../lib/supabaseClient";
 
 const statusStyles = {
-  lead: 'bg-warnSoft text-warn',
-  active: 'bg-accentSoft text-accent',
-  inactive: 'bg-ink/5 text-ink/50',
-}
+  lead: "bg-warnSoft text-warn",
+  active: "bg-accentSoft text-accent",
+  inactive: "bg-ink/5 text-ink/50",
+};
 
 export default function Clients() {
-  const [clients, setClients] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company_name: '', status: 'lead' })
-  const [error, setError] = useState('')
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    company_name: "",
+    status: "lead",
+  });
+  const [error, setError] = useState("");
 
   async function loadClients() {
-    setLoading(true)
-    const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false })
-    if (!error) setClients(data)
-    setLoading(false)
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("clients")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error) setClients(data);
+    setLoading(false);
   }
 
   useEffect(() => {
-    loadClients()
-  }, [])
+    loadClients();
+  }, []);
 
   async function handleAddClient(e) {
-    e.preventDefault()
-    setError('')
-    if (!form.name.trim()) {
-      setError('Client name is required.')
-      return
+    e.preventDefault();
+    setError("");
+
+    const trimmedName = form.name.trim();
+    const trimmedEmail = form.email.trim();
+    const trimmedPhone = form.phone.trim();
+    const trimmedCompany = form.company_name.trim();
+
+    if (!trimmedName) {
+      setError("Client name is required.");
+      return;
     }
-    const { error } = await supabase.from('clients').insert([form])
+
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (trimmedPhone && trimmedPhone.length < 7) {
+      setError("Phone number looks too short.");
+      return;
+    }
+
+    const { error } = await supabase.from("clients").insert([
+      {
+        name: trimmedName,
+        email: trimmedEmail || null,
+        phone: trimmedPhone || null,
+        company_name: trimmedCompany || null,
+        status: form.status,
+      },
+    ]);
+
     if (error) {
-      setError(error.message)
-      return
+      setError(error.message);
+      return;
     }
-    setForm({ name: '', email: '', phone: '', company_name: '', status: 'lead' })
-    setShowForm(false)
-    loadClients()
+
+    setForm({
+      name: "",
+      email: "",
+      phone: "",
+      company_name: "",
+      status: "lead",
+    });
+    setShowForm(false);
+    loadClients();
   }
 
   const filtered = clients.filter((c) => {
     const matchesSearch =
       c.name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.company_name?.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || c.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+      c.company_name?.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "all" || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="p-8 max-w-5xl">
@@ -64,12 +106,15 @@ export default function Clients() {
           onClick={() => setShowForm((v) => !v)}
           className="bg-ink text-white text-sm font-medium rounded-lg px-4 py-2 hover:opacity-90 transition"
         >
-          {showForm ? 'Cancel' : 'Add client'}
+          {showForm ? "Cancel" : "Add client"}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleAddClient} className="bg-white border border-line rounded-xl p-4 mb-6 grid grid-cols-2 gap-3">
+        <form
+          onSubmit={handleAddClient}
+          className="bg-white border border-line rounded-xl p-4 mb-6 grid grid-cols-2 gap-3"
+        >
           <input
             placeholder="Client name"
             value={form.name}
@@ -103,7 +148,10 @@ export default function Clients() {
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
-          <button type="submit" className="bg-accent text-white text-sm font-medium rounded-lg px-4 py-2 hover:opacity-90">
+          <button
+            type="submit"
+            className="bg-accent text-white text-sm font-medium rounded-lg px-4 py-2 hover:opacity-90"
+          >
             Save client
           </button>
           {error && <p className="col-span-2 text-xs text-danger">{error}</p>}
@@ -133,7 +181,9 @@ export default function Clients() {
         {loading ? (
           <p className="text-sm text-ink/40 px-4 py-8 text-center">Loading…</p>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-ink/40 px-4 py-8 text-center">No clients match.</p>
+          <p className="text-sm text-ink/40 px-4 py-8 text-center">
+            No clients match.
+          </p>
         ) : (
           filtered.map((c) => (
             <Link
@@ -143,9 +193,13 @@ export default function Clients() {
             >
               <div>
                 <p className="text-sm font-medium">{c.name}</p>
-                <p className="text-xs text-ink/50">{c.company_name || '—'} · {c.email || 'no email'}</p>
+                <p className="text-xs text-ink/50">
+                  {c.company_name || "—"} · {c.email || "no email"}
+                </p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${statusStyles[c.status] || ''}`}>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full capitalize ${statusStyles[c.status] || ""}`}
+              >
                 {c.status}
               </span>
             </Link>
@@ -153,5 +207,5 @@ export default function Clients() {
         )}
       </div>
     </div>
-  )
+  );
 }

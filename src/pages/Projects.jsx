@@ -128,17 +128,28 @@ export default function Projects() {
   async function handleAddProject(event) {
     event.preventDefault();
     setError("");
-    if (!form.name.trim() || !form.client_id) {
+
+    const cleanedName = form.name.trim();
+    const cleanedDescription = form.description.trim();
+    const budgetValue = Number(form.budget) || 0;
+
+    if (!cleanedName || !form.client_id) {
       setError("Project name and client are required.");
       return;
     }
+
+    if (budgetValue < 0) {
+      setError("Budget cannot be negative.");
+      return;
+    }
+
     const { error: insertError } = await supabase.from("projects").insert([
       {
-        name: form.name.trim(),
+        name: cleanedName,
         client_id: form.client_id,
         deal_id: form.deal_id || null,
-        description: form.description.trim() || null,
-        budget: Number(form.budget) || 0,
+        description: cleanedDescription || null,
+        budget: budgetValue,
         start_date: form.start_date || null,
         due_date: form.due_date || null,
         created_by: user.id,
