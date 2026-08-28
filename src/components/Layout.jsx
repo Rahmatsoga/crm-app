@@ -2,19 +2,26 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const navItems = [
-  { to: "/", label: "Dashboard", end: true },
-  { to: "/clients", label: "Clients" },
-  { to: "/pipeline", label: "Pipeline" },
-  { to: "/projects", label: "Projects" },
-  { to: "/invoices", label: "Invoices" },
-  { to: "/documents", label: "Documents" },
-  { to: "/tasks", label: "Tasks" },
-  { to: "/tickets", label: "Tickets" },
+  {
+    to: "/",
+    label: "Dashboard",
+    end: true,
+    roles: ["admin", "sales", "support"],
+  },
+  { to: "/clients", label: "Clients", roles: ["admin", "sales", "support"] },
+  { to: "/pipeline", label: "Pipeline", roles: ["admin", "sales"] },
+  { to: "/projects", label: "Projects", roles: ["admin", "sales"] },
+  { to: "/invoices", label: "Invoices", roles: ["admin", "sales"] },
+  { to: "/documents", label: "Documents", roles: ["admin", "sales"] },
+  { to: "/tasks", label: "Tasks", roles: ["admin", "sales", "support"] },
+  { to: "/tickets", label: "Tickets", roles: ["admin", "sales", "support"] },
 ];
 
 export default function Layout() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const role = profile?.role || "sales";
+  const visibleNavItems = navItems.filter((item) => item.roles.includes(role));
 
   async function handleSignOut() {
     await signOut();
@@ -32,7 +39,7 @@ export default function Layout() {
         </div>
 
         <nav className="flex-1 px-2 py-3 space-y-0.5">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

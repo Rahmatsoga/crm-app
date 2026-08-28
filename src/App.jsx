@@ -25,6 +25,36 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function RoleProtectedRoute({ children, allowedRoles }) {
+  const { user, profile, loading } = useAuth();
+  const role = profile?.role || "sales";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-ink/40">
+        Loading…
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  if (!allowedRoles.includes(role)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="bg-white border border-line rounded-xl p-6 max-w-md text-center">
+          <p className="text-lg font-semibold text-ink mb-2">Access denied</p>
+          <p className="text-sm text-ink/60">
+            This section is restricted to {allowedRoles.join(" / ")} users.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -41,11 +71,46 @@ function AppRoutes() {
         <Route path="clients" element={<Clients />} />
         <Route path="clients/:id" element={<ClientDetail />} />
         <Route path="pipeline" element={<Pipeline />} />
-        <Route path="projects" element={<Projects />} />
-        <Route path="invoices" element={<Invoices />} />
-        <Route path="documents" element={<Documents />} />
-        <Route path="tasks" element={<Tasks />} />
-        <Route path="tickets" element={<Tickets />} />
+        <Route
+          path="projects"
+          element={
+            <RoleProtectedRoute allowedRoles={["admin", "sales"]}>
+              <Projects />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="invoices"
+          element={
+            <RoleProtectedRoute allowedRoles={["admin", "sales"]}>
+              <Invoices />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="documents"
+          element={
+            <RoleProtectedRoute allowedRoles={["admin", "sales"]}>
+              <Documents />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="tasks"
+          element={
+            <RoleProtectedRoute allowedRoles={["admin", "sales", "support"]}>
+              <Tasks />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="tickets"
+          element={
+            <RoleProtectedRoute allowedRoles={["admin", "sales", "support"]}>
+              <Tickets />
+            </RoleProtectedRoute>
+          }
+        />
       </Route>
     </Routes>
   );
