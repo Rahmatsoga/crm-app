@@ -12,6 +12,20 @@ const DEAL_STAGES = [
   { key: "lost", label: "Lost" },
 ];
 
+const PROJECT_STATUSES = [
+  { key: "planning", label: "Planning" },
+  { key: "in-progress", label: "In progress" },
+  { key: "on-hold", label: "On hold" },
+  { key: "completed", label: "Completed" },
+  { key: "cancelled", label: "Cancelled" },
+];
+
+const currency = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
 export default function Dashboard() {
   const { profile } = useAuth();
   const [stats, setStats] = useState({
@@ -19,14 +33,18 @@ export default function Dashboard() {
     deals: 0,
     tasks: 0,
     tickets: 0,
+    pipelineValue: 0,
+    wonValue: 0,
+    activeProjects: 0,
   });
   const [dealOverview, setDealOverview] = useState([]);
+  const [projectOverview, setProjectOverview] = useState([]);
   const [recentClients, setRecentClients] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [clients, deals, tasks, tickets, recent, dealData] =
+      const [clients, deals, tasks, tickets, recent, dealData, projectData] =
         await Promise.all([
           supabase.from("clients").select("id", { count: "exact", head: true }),
           supabase
@@ -47,33 +65,77 @@ export default function Dashboard() {
             .order("created_at", { ascending: false })
             .limit(5),
           supabase.from("deals").select("stage, value"),
+          supabase.from("projects").select("status, budget"),
         ]);
+
       const stageMap = DEAL_STAGES.reduce((acc, stage) => {
-        acc[stage.key] = 0;
+        acc[stage.key] = { count: 0, value: 0 };
         return acc;
       }, {});
 
+      let pipelineValue = 0;
+      let wonValue = 0;
+
       (dealData.data ?? []).forEach((deal) => {
-        if (stageMap[deal.stage] !== undefined) {
-          stageMap[deal.stage] += 1;
+        const value = Number(deal.value) || 0;
+        if (stageMap[deal.stage]) {
+          stageMap[deal.stage].count += 1;
+          stageMap[deal.stage].value += value;
+        }
+
+        if (deal.stage !== "won" && deal.stage !== "lost") {
+          pipelineValue += value;
+        }
+
+        if (deal.stage === "won") {
+          wonValue += value;
         }
       });
 
-      const maxStageCount = Math.max(...Object.values(stageMap), 1);
+      const projectStageMap = PROJECT_STATUSES.reduce((acc, status) => {
+        acc[status.key] = 0;
+        return acc;
+      }, {});
+
+      (projectData.data ?? []).forEach((project) => {
+        if (projectStageMap[project.status] !== undefined) {
+          projectStageMap[project.status] += 1;
+        }
+      });
+
+      const maxStageCount = Math.max(
+        ...DEAL_STAGES.map((stage) => stageMap[stage.key].count),
+        1,
+      );
 
       setStats({
         clients: clients.count ?? 0,
         deals: deals.count ?? 0,
         tasks: tasks.count ?? 0,
         tickets: tickets.count ?? 0,
+        pipelineValue,
+        wonValue,
+        activeProjects: (projectData.data ?? []).filter(
+          (project) => project.status === "in-progress",
+        ).length,
       });
+
       setDealOverview(
         DEAL_STAGES.map((stage) => ({
           ...stage,
-          count: stageMap[stage.key],
-          width: `${(stageMap[stage.key] / maxStageCount) * 100}%`,
+          count: stageMap[stage.key].count,
+          value: stageMap[stage.key].value,
+          width: `${(stageMap[stage.key].count / maxStageCount) * 100}%`,
         })),
       );
+
+      setProjectOverview(
+        PROJECT_STATUSES.map((status) => ({
+          ...status,
+          count: projectStageMap[status.key],
+        })),
+      );
+
       setRecentClients(recent.data ?? []);
       setLoading(false);
     }
@@ -94,12 +156,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8 max-w-6xl">
       <h1 className="text-lg font-semibold text-ink mb-1">
         Welcome back{profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}
       </h1>
       <p className="text-sm text-ink/50 mb-6">
-        Here's what's happening across your accounts.
+        Here's an executive view of your client pipeline and delivery
+        performance.
       </p>
 
       <div className="grid grid-cols-4 gap-4 mb-8">
@@ -117,7 +180,105 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-white border border-line rounded-xl p-4">
+          <p className="text-xs text-ink/50 mb-2">Pipeline value</p>
+          <p className="text-2xl font-semibold text-ink">
+            {loading ? "—" : currency.format(stats.pipelineValue)}
+          </p>
+          <p className="text-xs text-ink/40 mt-1">Open opportunities</p>
+        </div>
+
+        <div className="bg-white border border-line rounded-xl p-4">
+          <p className="text-xs text-ink/50 mb-2">Won revenue</p>
+          <p className="text-2xl font-semibold text-ink">
+            {loading ? "—" : currency.format(stats.wonValue)}
+          </p>
+          <p className="text-xs text-ink/40 mt-1">Closed business</p>
+        </div>
+
+        <div className="bg-white border border-line rounded-xl p-4">
+          <p className="text-xs text-ink/50 mb-2">Active projects</p>
+          <p className="text-2xl font-semibold text-ink">
+            {loading ? "—" : stats.activeProjects}
+          </p>
+          <p className="text-xs text-ink/40 mt-1">Currently in motion</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
+        <div className="bg-white border border-line rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium">Deal stage mix</p>
+            <Link
+              to="/pipeline"
+              className="text-xs text-accent hover:underline"
+            >
+              View pipeline
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {dealOverview.map((stage) => (
+              <div key={stage.key}>
+                <div className="flex items-center justify-between text-[11px] text-ink/60 mb-1">
+                  <span>{stage.label}</span>
+                  <span>
+                    {stage.count} • {currency.format(stage.value)}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-paper overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-accent"
+                    style={{ width: stage.width }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white border border-line rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium">Project status</p>
+            <Link
+              to="/projects"
+              className="text-xs text-accent hover:underline"
+            >
+              Open projects
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {projectOverview.map((status) => (
+              <div key={status.key}>
+                <div className="flex items-center justify-between text-[11px] text-ink/60 mb-1">
+                  <span>{status.label}</span>
+                  <span>{status.count}</span>
+                </div>
+                <div className="h-2 rounded-full bg-paper overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-ink/60"
+                    style={{
+                      width: `${
+                        (status.count /
+                          Math.max(
+                            projectOverview.reduce(
+                              (sum, item) => sum + item.count,
+                              0,
+                            ),
+                            1,
+                          )) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-4">
         <div className="bg-white border border-line rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-line flex items-center justify-between">
             <p className="text-sm font-medium">Recent clients</p>
@@ -155,31 +316,26 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white border border-line rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-medium">Pipeline health</p>
-            <Link
-              to="/pipeline"
-              className="text-xs text-accent hover:underline"
-            >
-              Open pipeline
-            </Link>
-          </div>
-
+          <p className="text-sm font-medium mb-4">Manager snapshot</p>
           <div className="space-y-3">
-            {dealOverview.map((stage) => (
-              <div key={stage.key}>
-                <div className="flex items-center justify-between text-[11px] text-ink/60 mb-1">
-                  <span>{stage.label}</span>
-                  <span>{stage.count}</span>
-                </div>
-                <div className="h-2 rounded-full bg-paper overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-accent"
-                    style={{ width: stage.width }}
-                  />
-                </div>
-              </div>
-            ))}
+            <div className="flex items-center justify-between rounded-lg bg-paper px-3 py-2">
+              <span className="text-xs text-ink/60">Open pipeline</span>
+              <span className="text-sm font-medium text-ink">
+                {loading ? "—" : currency.format(stats.pipelineValue)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-paper px-3 py-2">
+              <span className="text-xs text-ink/60">Open tickets</span>
+              <span className="text-sm font-medium text-ink">
+                {loading ? "—" : stats.tickets}
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-paper px-3 py-2">
+              <span className="text-xs text-ink/60">Pending tasks</span>
+              <span className="text-sm font-medium text-ink">
+                {loading ? "—" : stats.tasks}
+              </span>
+            </div>
           </div>
         </div>
       </div>
