@@ -9,6 +9,7 @@ export default function Documents() {
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState({ client_id: "", project_id: "" });
   const [file, setFile] = useState(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -69,7 +70,7 @@ export default function Documents() {
     }
     setForm({ client_id: "", project_id: "" });
     setFile(null);
-    event.target.reset();
+    setFileInputKey((k) => k + 1);
     setBusy(false);
     load();
   }
@@ -121,6 +122,7 @@ export default function Documents() {
             ))}
         </select>
         <input
+          key={fileInputKey}
           type="file"
           onChange={(event) => setFile(event.target.files?.[0] || null)}
           className="border border-line rounded-lg px-3 py-2 text-sm col-span-2"
