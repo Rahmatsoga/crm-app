@@ -11,6 +11,7 @@ import Invoices from "./pages/Invoices";
 import Documents from "./pages/Documents";
 import Tasks from "./pages/Tasks";
 import Tickets from "./pages/Tickets";
+import ResetPassword from "./pages/ResetPassword";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -59,6 +60,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/"
         element={
