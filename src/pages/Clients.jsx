@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../context/AuthContext";
 
 const statusStyles = {
   lead: "bg-warnSoft text-warn",
@@ -9,6 +10,7 @@ const statusStyles = {
 };
 
 export default function Clients() {
+  const { user } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -63,6 +65,7 @@ export default function Clients() {
 
     const { error } = await supabase.from("clients").insert([
       {
+        assigned_rep_id: user.id,
         name: trimmedName,
         email: trimmedEmail || null,
         phone: trimmedPhone || null,
