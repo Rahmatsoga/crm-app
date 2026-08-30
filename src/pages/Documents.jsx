@@ -121,12 +121,24 @@ export default function Documents() {
               </option>
             ))}
         </select>
-        <input
-          key={fileInputKey}
-          type="file"
-          onChange={(event) => setFile(event.target.files?.[0] || null)}
-          className="border border-line rounded-lg px-3 py-2 text-sm col-span-2"
-        />
+        <div className="border border-line rounded-lg px-3 py-2 text-sm col-span-2 flex items-center gap-3 bg-white">
+          <label
+            htmlFor="document-file-input"
+            className="bg-ink text-white text-xs font-medium px-3 py-1.5 rounded-md cursor-pointer hover:opacity-90 shrink-0"
+          >
+            Choose File
+          </label>
+          <span className="text-ink/60 truncate">
+            {file ? file.name : "No file chosen"}
+          </span>
+          <input
+            id="document-file-input"
+            key={fileInputKey}
+            type="file"
+            onChange={(event) => setFile(event.target.files?.[0] || null)}
+            className="hidden"
+          />
+        </div>
         <button
           type="submit"
           disabled={busy}
