@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { ActivityFeed } from '../components/ActivityFeed' // ADD THIS IMPORT
 
 const TABS = ['Activity', 'Deals', 'Tasks', 'Tickets']
 
@@ -15,8 +16,6 @@ export default function ClientDetail() {
   const [deals, setDeals] = useState([])
   const [tasks, setTasks] = useState([])
   const [tickets, setTickets] = useState([])
-  const [note, setNote] = useState('')
-  const [noteType, setNoteType] = useState('note')
   const [loading, setLoading] = useState(true)
 
   async function loadAll() {
@@ -39,16 +38,6 @@ export default function ClientDetail() {
   useEffect(() => {
     loadAll()
   }, [id])
-
-  async function addNote(e) {
-    e.preventDefault()
-    if (!note.trim()) return
-    await supabase.from('interactions').insert([
-      { client_id: id, user_id: user.id, type: noteType, notes: note },
-    ])
-    setNote('')
-    loadAll()
-  }
 
   async function updateStatus(status) {
     await supabase.from('clients').update({ status }).eq('id', id)
@@ -107,44 +96,7 @@ export default function ClientDetail() {
       </div>
 
       {tab === 'Activity' && (
-        <div>
-          <form onSubmit={addNote} className="bg-white border border-line rounded-xl p-3 mb-4 flex gap-2">
-            <select
-              value={noteType}
-              onChange={(e) => setNoteType(e.target.value)}
-              className="border border-line rounded-lg px-2 text-xs"
-            >
-              <option value="note">Note</option>
-              <option value="call">Call</option>
-              <option value="email">Email</option>
-              <option value="meeting">Meeting</option>
-            </select>
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Log an interaction…"
-              className="flex-1 border border-line rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-            />
-            <button type="submit" className="bg-ink text-white text-sm rounded-lg px-3 py-1.5">
-              Add
-            </button>
-          </form>
-          {interactions.length === 0 ? (
-            <p className="text-sm text-ink/40 text-center py-8">No activity logged yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {interactions.map((i) => (
-                <div key={i.id} className="bg-white border border-line rounded-lg p-3 text-sm">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium capitalize text-accent">{i.type}</span>
-                    <span className="text-xs text-ink/40">{new Date(i.created_at).toLocaleString()}</span>
-                  </div>
-                  <p>{i.notes}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ActivityFeed clientId={id} onActivityAdded={loadAll} />
       )}
 
       {tab === 'Deals' && (
