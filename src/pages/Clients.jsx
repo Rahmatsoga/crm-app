@@ -10,7 +10,8 @@ const statusStyles = {
 };
 
 export default function Clients() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const canAddClient = ["admin", "sales", "support"].includes(profile?.role);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -63,16 +64,22 @@ export default function Clients() {
       return;
     }
 
-    const { error } = await supabase.from("clients").insert([
-      {
-        assigned_rep_id: user.id,
-        name: trimmedName,
-        email: trimmedEmail || null,
-        phone: trimmedPhone || null,
-        company_name: trimmedCompany || null,
-        status: form.status,
-      },
-    ]);
+    const payload = {
+      name: trimmedName,
+      email: trimmedEmail || null,
+      phone: trimmedPhone || null,
+      company_name: trimmedCompany || null,
+      status: form.status,
+      created_by: user.id,
+    };
+
+    // Only auto-assign as the sales owner if the creator is Admin/Sales.
+    // Support-created clients stay unassigned until a rep picks them up.
+    if (profile?.role === "admin" || profile?.role === "sales") {
+      payload.assigned_rep_id = user.id;
+    }
+
+    const { error } = await supabase.from("clients").insert([payload]);
 
     if (error) {
       setError(error.message);
@@ -105,15 +112,17 @@ export default function Clients() {
           <h1 className="text-lg font-semibold text-ink">Clients</h1>
           <p className="text-sm text-ink/50">{clients.length} total</p>
         </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="bg-ink text-white text-sm font-medium rounded-lg px-4 py-2 hover:opacity-90 transition"
-        >
-          {showForm ? "Cancel" : "Add client"}
-        </button>
+        {canAddClient && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="bg-ink text-white text-sm font-medium rounded-lg px-4 py-2 hover:opacity-90 transition"
+          >
+            {showForm ? "Cancel" : "Add client"}
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && canAddClient && (
         <form
           onSubmit={handleAddClient}
           className="bg-white border border-line rounded-xl p-4 mb-6 grid grid-cols-2 gap-3"

@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 
 export default function Documents() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -72,6 +72,30 @@ export default function Documents() {
     setFile(null);
     setFileInputKey((k) => k + 1);
     setBusy(false);
+    load();
+  }
+
+  async function handleDelete(document) {
+    const confirmed = window.confirm(
+      `Delete "${document.file_name}"? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    if (document.storage_path) {
+      await supabase.storage
+        .from("project-documents")
+        .remove([document.storage_path]);
+    }
+
+    const { error } = await supabase
+      .from("documents")
+      .delete()
+      .eq("id", document.id);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
     load();
   }
 
@@ -155,33 +179,47 @@ export default function Documents() {
             No documents uploaded yet.
           </p>
         ) : (
-          documents.map((document) => (
-            <div
-              key={document.id}
-              className="px-4 py-4 border-b border-line last:border-0 flex items-center justify-between gap-4"
-            >
-              <div className="min-w-0">
-                <a
-                  href={document.file_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm font-medium text-accent hover:underline truncate block"
-                >
-                  {document.file_name}
-                </a>
-                <p className="text-xs text-ink/50">
-                  {document.projects?.name ||
-                    document.clients?.name ||
-                    "Unknown client"}
-                </p>
+          documents.map((document) => {
+            const canDelete =
+              profile?.role === "admin" || document.uploaded_by === user.id;
+            return (
+              <div
+                key={document.id}
+                className="px-4 py-4 border-b border-line last:border-0 flex items-center justify-between gap-4"
+              >
+                <div className="min-w-0">
+                  <a
+                    href={document.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-medium text-accent hover:underline truncate block"
+                  >
+                    {document.file_name}
+                  </a>
+                  <p className="text-xs text-ink/50">
+                    {document.projects?.name ||
+                      document.clients?.name ||
+                      "Unknown client"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs text-ink/40">
+                    {document.uploaded_at
+                      ? new Date(document.uploaded_at).toLocaleDateString()
+                      : ""}
+                  </span>
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDelete(document)}
+                      className="text-xs text-danger hover:underline"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className="text-xs text-ink/40 shrink-0">
-                {document.uploaded_at
-                  ? new Date(document.uploaded_at).toLocaleDateString()
-                  : ""}
-              </span>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
