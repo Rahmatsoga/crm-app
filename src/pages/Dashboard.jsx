@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import { EmailSync } from "../components/EmailSync";
 
 const DEAL_STAGES = [
   { key: "new", label: "New" },
@@ -164,6 +165,11 @@ export default function Dashboard() {
         Here's an executive view of your client pipeline and delivery
         performance.
       </p>
+
+      {/* Email Sync Component */}
+      <div className="mb-8">
+        <EmailSync />
+      </div>
 
       <div className="grid grid-cols-4 gap-4 mb-8">
         {cards.map((c) => (

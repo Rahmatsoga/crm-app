@@ -12,6 +12,8 @@ import Documents from "./pages/Documents";
 import Tasks from "./pages/Tasks";
 import Tickets from "./pages/Tickets";
 import ResetPassword from "./pages/ResetPassword";
+import GoogleCallback from './pages/Auth/GoogleCallback'
+
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -61,6 +63,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/auth/google/callback" element={<GoogleCallback />} />
       <Route
         path="/"
         element={
