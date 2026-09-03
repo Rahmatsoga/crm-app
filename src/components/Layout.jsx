@@ -33,9 +33,9 @@ export default function Layout() {
       <aside className="w-56 shrink-0 border-r border-line bg-white flex flex-col">
         <div className="px-4 py-4 border-b border-line flex items-center gap-2">
           <div className="h-7 w-7 rounded-md bg-accent text-white flex items-center justify-center text-xs font-semibold mono">
-            X
+            E
           </div>
-          <span className="text-sm font-semibold text-ink">XYZ CRM</span>
+          <span className="text-sm font-semibold text-ink">Elevatech CRM</span>
         </div>
 
         <nav className="flex-1 px-2 py-3 space-y-0.5">

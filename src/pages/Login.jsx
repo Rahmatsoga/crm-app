@@ -72,9 +72,9 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-white font-semibold mono mb-3">
-            X
+            E
           </div>
-          <h1 className="text-xl font-semibold text-ink">XYZ Software House</h1>
+          <h1 className="text-xl font-semibold text-ink">Elevatech CRM</h1>
           <p className="text-sm text-ink/60 mt-1">
             Client relationship workspace
           </p>
@@ -114,7 +114,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                    placeholder="you@xyzsoftware.com"
+                    placeholder="you@elevatech.com"
                   />
                 </div>
 
@@ -170,7 +170,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                  placeholder="you@xyzsoftware.com"
+                  placeholder="you@elevatech.com"
                 />
               </div>
               <div>
