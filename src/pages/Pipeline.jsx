@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabaseClient";
 import PipelineBuilder from "../components/PipelineBuilder";
 import PipelineCardModal from "../components/PipelineCardModal";
 
-const DEFAULT_STAGES = [
+const INITIAL_DEFAULT_STAGES = [
   { key: "new", label: "New" },
   { key: "contacted", label: "Contacted" },
   { key: "proposal", label: "Proposal" },
@@ -12,8 +12,51 @@ const DEFAULT_STAGES = [
   { key: "lost", label: "Lost" },
 ];
 
+const DEFAULT_SAMPLE_DEALS = [
+  {
+    id: "deal-sample-1",
+    title: "Voice AI Appointment Assistant",
+    stage: "proposal",
+    value: 50000,
+    clients: { name: "Sarah Johnson", company_name: "Apex Dental Group" },
+    checklist: [
+      { id: 1, text: "Script ready for Voiceover", completed: true },
+      { id: 2, text: "Voiceover ready and approved", completed: true },
+      { id: 3, text: "Milestone created / Payment entered", completed: false },
+      { id: 4, text: "Video ready", completed: false },
+      { id: 5, text: "Video approved", completed: false },
+      { id: 6, text: "Thumbnail ready", completed: false },
+      { id: 7, text: "Video published", completed: false },
+      { id: 8, text: "Performance Check after 7/30 days", completed: false },
+    ],
+  },
+  {
+    id: "deal-sample-2",
+    title: "Multi-Channel Lead Triage Engine",
+    stage: "contacted",
+    value: 75000,
+    clients: { name: "Jessica Lee", company_name: "SaaSify Scale" },
+    checklist: [
+      { id: 1, text: "Requirements Gathered", completed: true },
+      { id: 2, text: "API Architecture Designed", completed: true },
+      { id: 3, text: "Integration Testing", completed: false },
+    ],
+  },
+  {
+    id: "deal-sample-3",
+    title: "Enterprise Web Scraper & GHL Data Sync",
+    stage: "negotiation",
+    value: 60000,
+    clients: { name: "Mike Chen", company_name: "Vanguard Real Estate" },
+    checklist: [
+      { id: 1, text: "Data Schema Mapped", completed: true },
+      { id: 2, text: "GHL OAuth Configured", completed: false },
+    ],
+  },
+];
+
 export default function Pipeline() {
-  const [deals, setDeals] = useState([]);
+  const [deals, setDeals] = useState(DEFAULT_SAMPLE_DEALS);
   const [clients, setClients] = useState([]);
   const [users, setUsers] = useState([]);
   const [customPipelines, setCustomPipelines] = useState([]);
@@ -21,8 +64,15 @@ export default function Pipeline() {
   
   const [showBuilder, setShowBuilder] = useState(false);
   const [showAddDealForm, setShowAddDealForm] = useState(false);
+
+  // In-column Card Adding
   const [addingCardStage, setAddingCardStage] = useState(null); // stage key or stage id
   const [quickTitle, setQuickTitle] = useState("");
+  const [quickValue, setQuickValue] = useState("");
+
+  // Far-right New Stage List Inline Form
+  const [showAddStageInput, setShowAddStageInput] = useState(false);
+  const [newStageName, setNewStageName] = useState("");
 
   const [form, setForm] = useState({ client_id: "", title: "", value: "" });
   const [error, setError] = useState("");
@@ -31,33 +81,36 @@ export default function Pipeline() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedDeal, setSelectedDeal] = useState(null);
 
-  // Dynamic custom stage list & cards
+  // Dynamic stage lists & custom cards
+  const [defaultStageList, setDefaultStageList] = useState(INITIAL_DEFAULT_STAGES);
   const [customStages, setCustomStages] = useState([]);
   const [customCards, setCustomCards] = useState([]);
 
   // Editable stage names
-  const [defaultStageLabels, setDefaultStageLabels] = useState(
-    DEFAULT_STAGES.reduce((acc, s) => ({ ...acc, [s.key]: s.label }), {})
-  );
   const [editingStageKey, setEditingStageKey] = useState(null);
   const [editingStageText, setEditingStageText] = useState("");
 
   async function load() {
-    // Fetch Deals, Clients, Users
-    const [d, c, u] = await Promise.all([
-      supabase
-        .from("deals")
-        .select("*, clients(name, company_name)")
-        .order("created_at", { ascending: false }),
-      supabase.from("clients").select("id, name, company_name").order("name"),
-      supabase.from("users").select("id, name, email, role").order("name"),
-    ]);
-    setDeals(d.data ?? []);
-    setClients(c.data ?? []);
-    setUsers(u.data ?? []);
-
-    // Fetch Custom Pipelines
     try {
+      const [d, c, u] = await Promise.all([
+        supabase
+          .from("deals")
+          .select("*, clients(name, company_name)")
+          .order("created_at", { ascending: false }),
+        supabase.from("clients").select("id, name, company_name").order("name"),
+        supabase.from("users").select("id, name, email, role").order("name"),
+      ]);
+
+      if (d.data && d.data.length > 0) {
+        setDeals(d.data);
+      } else {
+        setDeals(DEFAULT_SAMPLE_DEALS);
+      }
+
+      setClients(c.data ?? []);
+      setUsers(u.data ?? []);
+
+      // Fetch Custom Pipelines
       const { data: pipelinesData, error: pError } = await supabase
         .from("custom_pipelines")
         .select("*, pipeline_stages(*)")
@@ -67,7 +120,7 @@ export default function Pipeline() {
         setCustomPipelines(pipelinesData);
       }
     } catch (e) {
-      console.warn("Custom pipelines check:", e);
+      console.warn("Pipeline load warning:", e);
     }
   }
 
@@ -98,12 +151,12 @@ export default function Pipeline() {
         if (!cardError && cardsData && cardsData.length > 0) {
           setCustomCards(cardsData);
         } else {
-          // If no cards exist in database yet for this custom pipeline, generate dynamic sample cards for the stages!
+          // Dynamic sample cards if empty
           const generatedSampleCards = [
             {
-              id: "sample-1",
+              id: `sample-card-1-${pipelineId}`,
               stage_id: loadedStages[0]?.id,
-              card_title: "070 Voice AI Appointment Assistant",
+              card_title: "Voice AI Appointment Assistant",
               card_value: 50000,
               checklist: [
                 { id: 1, text: "Script ready for Voiceover", completed: true },
@@ -117,7 +170,7 @@ export default function Pipeline() {
               ],
             },
             {
-              id: "sample-2",
+              id: `sample-card-2-${pipelineId}`,
               stage_id: loadedStages[1]?.id || loadedStages[0]?.id,
               card_title: "Multi-Channel Lead Triage Engine",
               card_value: 75000,
@@ -128,7 +181,7 @@ export default function Pipeline() {
               ],
             },
             {
-              id: "sample-3",
+              id: `sample-card-3-${pipelineId}`,
               stage_id: loadedStages[2]?.id || loadedStages[0]?.id,
               card_title: "Enterprise Web Scraper & GHL Sync",
               card_value: 60000,
@@ -154,104 +207,156 @@ export default function Pipeline() {
     loadCustomPipelineData(selectedPipelineId);
   }, [selectedPipelineId]);
 
-  // Quick In-Column Add Card
+  // Handle Quick Add Card inside Stage Column
   async function handleQuickAddCard(stageKeyOrId) {
     if (!quickTitle.trim()) return;
 
+    const val = Number(quickValue) || 0;
+    const titleText = quickTitle.trim();
+
     if (selectedPipelineId === "default") {
-      const firstClient = clients[0]?.id || null;
-      await supabase.from("deals").insert([
-        {
-          title: quickTitle.trim(),
-          stage: stageKeyOrId,
-          client_id: firstClient,
-          value: 0,
-        },
-      ]);
-      load();
+      const newDealObj = {
+        id: `deal-${Date.now()}`,
+        title: titleText,
+        stage: stageKeyOrId,
+        value: val,
+        clients: { name: clients[0]?.name || "Elevatech Client", company_name: clients[0]?.company_name || "Elevatech" },
+        checklist: [
+          { id: 1, text: "Requirements Gathered", completed: true },
+          { id: 2, text: "Development & Testing", completed: false },
+        ],
+      };
+
+      // 1. Instant local update
+      setDeals((prev) => [newDealObj, ...prev]);
+
+      // 2. Supabase insert
+      try {
+        const clientId = clients[0]?.id || null;
+        await supabase.from("deals").insert([
+          {
+            title: titleText,
+            stage: stageKeyOrId,
+            client_id: clientId,
+            value: val,
+          },
+        ]);
+      } catch (e) {
+        console.warn("Deal insert error:", e);
+      }
     } else {
       const newCardObj = {
         id: `card-${Date.now()}`,
         stage_id: stageKeyOrId,
-        card_title: quickTitle.trim(),
-        card_value: 0,
+        card_title: titleText,
+        card_value: val,
         checklist: [
-          { id: 1, text: "Initial Requirements", completed: true },
-          { id: 2, text: "Development Review", completed: false },
+          { id: 1, text: "Requirements Gathered", completed: true },
+          { id: 2, text: "Development & Testing", completed: false },
         ],
       };
-      
+
+      // 1. Instant local update
       setCustomCards((prev) => [...prev, newCardObj]);
-      
+
+      // 2. Supabase insert
       try {
         await supabase.from("pipeline_cards").insert([
           {
             stage_id: stageKeyOrId,
-            card_title: quickTitle.trim(),
-            card_value: 0,
+            card_title: titleText,
+            card_value: val,
           },
         ]);
       } catch (e) {
-        console.warn("Card insert fallback:", e);
+        console.warn("Card insert error:", e);
       }
-      loadCustomPipelineData(selectedPipelineId);
     }
+
     setQuickTitle("");
+    setQuickValue("");
     setAddingCardStage(null);
   }
 
-  // Quick Add New Stage / List at the far right
-  async function handleAddNewStageList() {
-    const stageName = prompt("Enter new stage list name:", "New Workflow Stage");
-    if (!stageName || !stageName.trim()) return;
+  // Handle Add Stage / List Column at Far Right
+  async function handleAddStageListSubmit(e) {
+    e.preventDefault();
+    if (!newStageName.trim()) return;
+
+    const nameText = newStageName.trim();
+    const stageKey = nameText.toLowerCase().replace(/\s+/g, "_");
 
     if (selectedPipelineId === "default") {
-      const key = stageName.toLowerCase().replace(/\s+/g, "_");
-      setDefaultStageLabels((prev) => ({ ...prev, [key]: stageName.trim() }));
+      // 1. Instant local stage addition
+      const newStageObj = { key: stageKey, label: nameText };
+      setDefaultStageList((prev) => [...prev, newStageObj]);
     } else {
       const nextOrder = customStages.length + 1;
+      const newCustomStageObj = {
+        id: `stage-${Date.now()}`,
+        pipeline_id: selectedPipelineId,
+        stage_name: nameText,
+        stage_order: nextOrder,
+      };
+
+      // 1. Instant local stage addition
+      setCustomStages((prev) => [...prev, newCustomStageObj]);
+
+      // 2. Supabase insert
       try {
         await supabase.from("pipeline_stages").insert([
           {
             pipeline_id: selectedPipelineId,
-            stage_name: stageName.trim(),
+            stage_name: nameText,
             stage_order: nextOrder,
           },
         ]);
       } catch (e) {
-        console.warn("Stage insert warning:", e);
+        console.warn("Stage insert error:", e);
       }
-      loadCustomPipelineData(selectedPipelineId);
     }
+
+    setNewStageName("");
+    setShowAddStageInput(false);
   }
 
-  // Save Dynamic Stage Label Edit
+  // Save Dynamic Stage Header Rename
   async function handleSaveStageLabel(stageIdOrKey) {
     if (!editingStageText.trim()) {
       setEditingStageKey(null);
       return;
     }
+    const updatedName = editingStageText.trim();
+
     if (selectedPipelineId === "default") {
-      setDefaultStageLabels((prev) => ({ ...prev, [stageIdOrKey]: editingStageText.trim() }));
+      setDefaultStageList((prev) =>
+        prev.map((s) => (s.key === stageIdOrKey ? { ...s, label: updatedName } : s))
+      );
     } else {
+      setCustomStages((prev) =>
+        prev.map((s) => (s.id === stageIdOrKey ? { ...s, stage_name: updatedName } : s))
+      );
       try {
         await supabase
           .from("pipeline_stages")
-          .update({ stage_name: editingStageText.trim() })
+          .update({ stage_name: updatedName })
           .eq("id", stageIdOrKey);
       } catch (e) {
-        console.warn("Stage rename warning:", e);
+        console.warn("Stage rename error:", e);
       }
-      setCustomStages((prev) =>
-        prev.map((s) => (s.id === stageIdOrKey ? { ...s, stage_name: editingStageText.trim() } : s))
-      );
     }
     setEditingStageKey(null);
   }
 
   async function moveStage(dealId, stage) {
-    await supabase.from("deals").update({ stage }).eq("id", dealId);
-    load();
+    setDeals((prev) =>
+      prev.map((d) => (d.id === dealId ? { ...d, stage: stage } : d))
+    );
+    try {
+      await supabase.from("deals").update({ stage }).eq("id", dealId);
+    } catch (e) {
+      console.warn("Move deal error:", e);
+    }
   }
 
   async function moveCustomCardStage(cardId, newStageId) {
@@ -265,7 +370,7 @@ export default function Pipeline() {
     }
   }
 
-  // Calculate Checklist Badge Summary
+  // Calculate Checklist Summary Badge
   function getChecklistSummary(checklist) {
     if (!checklist || !Array.isArray(checklist) || checklist.length === 0) {
       return { total: 8, completed: 2, percent: 25 };
@@ -280,7 +385,7 @@ export default function Pipeline() {
 
   return (
     <div className="p-8">
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl font-bold text-ink">Sales Pipeline & Workflows</h1>
@@ -341,15 +446,14 @@ export default function Pipeline() {
         {selectedPipelineId === "default" ? (
           /* Default Pipeline Columns */
           <>
-            {DEFAULT_STAGES.map((stage) => {
+            {defaultStageList.map((stage) => {
               const stageDeals = deals.filter((d) => d.stage === stage.key);
-              const labelName = defaultStageLabels[stage.key] || stage.label;
               return (
                 <div
                   key={stage.key}
                   className="bg-white border border-line rounded-2xl p-3 min-w-[270px] w-[280px] flex-shrink-0 flex flex-col shadow-xs"
                 >
-                  {/* Dynamic Editable Stage Header */}
+                  {/* Editable Stage Header */}
                   <div className="flex items-center justify-between px-1 mb-3 pb-2 border-b border-line/60">
                     {editingStageKey === stage.key ? (
                       <input
@@ -365,12 +469,12 @@ export default function Pipeline() {
                       <p
                         onClick={() => {
                           setEditingStageKey(stage.key);
-                          setEditingStageText(labelName);
+                          setEditingStageText(stage.label);
                         }}
                         className="text-xs font-bold text-ink uppercase tracking-wider cursor-pointer hover:text-accent"
                         title="Click to rename stage"
                       >
-                        {labelName}
+                        {stage.label}
                       </p>
                     )}
                     <span className="text-xs bg-paper border border-line px-2 py-0.5 rounded-full font-semibold text-ink/70">
@@ -396,9 +500,9 @@ export default function Pipeline() {
                           </p>
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs font-bold text-accent">
-                              {d.value ? `$${Number(d.value).toLocaleString()}` : "—"}
+                              {d.value ? `$${Number(d.value).toLocaleString()}` : "$0"}
                             </p>
-                            {/* Checklist summary badge */}
+                            {/* Checklist Summary Badge */}
                             <span className="text-[10px] bg-accent/10 text-accent font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
                               <span>☑</span> {summary.completed}/{summary.total} ({summary.percent}%)
                             </span>
@@ -410,9 +514,9 @@ export default function Pipeline() {
                             onChange={(e) => moveStage(d.id, e.target.value)}
                             className="w-full text-[11px] bg-white border border-line rounded-lg px-2 py-1 focus:outline-none"
                           >
-                            {DEFAULT_STAGES.map((s) => (
+                            {defaultStageList.map((s) => (
                               <option key={s.key} value={s.key}>
-                                Move to: {defaultStageLabels[s.key] || s.label}
+                                Move to: {s.label}
                               </option>
                             ))}
                           </select>
@@ -430,26 +534,34 @@ export default function Pipeline() {
                   {/* In-Column "+ Add a card" Button */}
                   <div className="mt-3 pt-2 border-t border-line/60">
                     {addingCardStage === stage.key ? (
-                      <div className="space-y-2">
+                      <div className="space-y-2 bg-paper p-2 rounded-xl border border-accent/40">
                         <input
                           type="text"
                           value={quickTitle}
                           onChange={(e) => setQuickTitle(e.target.value)}
-                          placeholder="Enter card title..."
-                          className="w-full text-xs px-2.5 py-1.5 border border-accent rounded-lg focus:outline-none"
+                          placeholder="Card title (e.g. Voice AI)"
+                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
                           autoFocus
+                          onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.key)}
+                        />
+                        <input
+                          type="number"
+                          value={quickValue}
+                          onChange={(e) => setQuickValue(e.target.value)}
+                          placeholder="Value ($)"
+                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
                           onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.key)}
                         />
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleQuickAddCard(stage.key)}
-                            className="bg-accent text-white text-[11px] font-bold px-3 py-1 rounded-lg"
+                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1"
                           >
                             Add Card
                           </button>
                           <button
                             onClick={() => setAddingCardStage(null)}
-                            className="text-ink/50 text-[11px] hover:text-ink"
+                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1"
                           >
                             Cancel
                           </button>
@@ -460,8 +572,9 @@ export default function Pipeline() {
                         onClick={() => {
                           setAddingCardStage(stage.key);
                           setQuickTitle("");
+                          setQuickValue("");
                         }}
-                        className="w-full py-1.5 text-xs text-ink/60 hover:text-ink font-semibold rounded-lg hover:bg-paper transition flex items-center justify-center gap-1"
+                        className="w-full py-1.5 text-xs text-ink/70 hover:text-ink font-semibold rounded-lg hover:bg-paper transition flex items-center justify-center gap-1"
                       >
                         <span>+</span> Add a card
                       </button>
@@ -528,7 +641,7 @@ export default function Pipeline() {
                           </p>
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs font-bold text-accent">
-                              {card.card_value ? `$${Number(card.card_value).toLocaleString()}` : "—"}
+                              {card.card_value ? `$${Number(card.card_value).toLocaleString()}` : "$0"}
                             </p>
                             <span className="text-[10px] bg-accent/10 text-accent font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
                               <span>☑</span> {summary.completed}/{summary.total} ({summary.percent}%)
@@ -561,26 +674,34 @@ export default function Pipeline() {
                   {/* In-Column "+ Add a card" Button */}
                   <div className="mt-3 pt-2 border-t border-line/60">
                     {addingCardStage === stage.id ? (
-                      <div className="space-y-2">
+                      <div className="space-y-2 bg-paper p-2 rounded-xl border border-accent/40">
                         <input
                           type="text"
                           value={quickTitle}
                           onChange={(e) => setQuickTitle(e.target.value)}
-                          placeholder="Enter card title..."
-                          className="w-full text-xs px-2.5 py-1.5 border border-accent rounded-lg focus:outline-none"
+                          placeholder="Card title (e.g. Voice AI)"
+                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
                           autoFocus
+                          onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.id)}
+                        />
+                        <input
+                          type="number"
+                          value={quickValue}
+                          onChange={(e) => setQuickValue(e.target.value)}
+                          placeholder="Value ($)"
+                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
                           onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.id)}
                         />
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleQuickAddCard(stage.id)}
-                            className="bg-accent text-white text-[11px] font-bold px-3 py-1 rounded-lg"
+                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1"
                           >
                             Add Card
                           </button>
                           <button
                             onClick={() => setAddingCardStage(null)}
-                            className="text-ink/50 text-[11px] hover:text-ink"
+                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1"
                           >
                             Cancel
                           </button>
@@ -591,8 +712,9 @@ export default function Pipeline() {
                         onClick={() => {
                           setAddingCardStage(stage.id);
                           setQuickTitle("");
+                          setQuickValue("");
                         }}
-                        className="w-full py-1.5 text-xs text-ink/60 hover:text-ink font-semibold rounded-lg hover:bg-paper transition flex items-center justify-center gap-1"
+                        className="w-full py-1.5 text-xs text-ink/70 hover:text-ink font-semibold rounded-lg hover:bg-paper transition flex items-center justify-center gap-1"
                       >
                         <span>+</span> Add a card
                       </button>
@@ -604,14 +726,49 @@ export default function Pipeline() {
           </>
         )}
 
-        {/* Button Column at Far Right to Add New Stage/List */}
-        <div className="min-w-[220px] w-[240px] flex-shrink-0">
-          <button
-            onClick={handleAddNewStageList}
-            className="w-full py-3 bg-white border border-dashed border-line hover:border-accent hover:bg-accent/5 rounded-2xl text-xs font-bold text-ink/70 hover:text-accent transition shadow-xs flex items-center justify-center gap-2"
-          >
-            <span className="text-base">+</span> Add Another Stage / List
-          </button>
+        {/* Far-Right Column: Add Another Stage / List Form */}
+        <div className="min-w-[240px] w-[260px] flex-shrink-0">
+          {showAddStageInput ? (
+            <form
+              onSubmit={handleAddStageListSubmit}
+              className="bg-white border border-accent/60 rounded-2xl p-3 shadow-md space-y-2.5"
+            >
+              <label className="block text-xs font-bold text-ink">New Stage List Title</label>
+              <input
+                type="text"
+                value={newStageName}
+                onChange={(e) => setNewStageName(e.target.value)}
+                placeholder="e.g. Quality Assurance, Review"
+                className="w-full text-xs px-3 py-2 border border-line rounded-xl focus:outline-none focus:ring-1 focus:ring-accent"
+                autoFocus
+              />
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="submit"
+                  className="bg-accent text-white text-xs font-bold px-4 py-2 rounded-xl hover:opacity-90 transition flex-1"
+                >
+                  Add List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddStageInput(false)}
+                  className="border border-line text-ink/70 text-xs px-3 py-2 rounded-xl hover:bg-paper"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              onClick={() => {
+                setShowAddStageInput(true);
+                setNewStageName("");
+              }}
+              className="w-full py-3.5 bg-white border border-dashed border-line hover:border-accent hover:bg-accent/5 rounded-2xl text-xs font-bold text-ink/70 hover:text-accent transition shadow-xs flex items-center justify-center gap-2"
+            >
+              <span className="text-base font-bold">+</span> Add Another Stage / List
+            </button>
+          )}
         </div>
       </div>
 
