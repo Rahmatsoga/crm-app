@@ -62,7 +62,6 @@ export function PipelineBuilder({ projectId, onClose, onCreated }) {
         .single();
 
       if (pipelineError) {
-        // Fallback: If table doesn't exist yet in Supabase SQL editor, provide actionable feedback or mock return
         if (pipelineError.code === "42P01") {
           throw new Error(
             "Custom pipelines table not found in Supabase. Please run database/create-pipeline-tables.sql in Supabase SQL Editor."
@@ -78,11 +77,57 @@ export function PipelineBuilder({ projectId, onClose, onCreated }) {
         stage_order: idx + 1,
       }));
 
-      const { error: stagesError } = await supabase
+      const { data: insertedStages, error: stagesError } = await supabase
         .from("pipeline_stages")
-        .insert(stagesData);
+        .insert(stagesData)
+        .select();
 
       if (stagesError) throw stagesError;
+
+      // 3. Seed sample cards into the newly created stages so they are not empty!
+      if (insertedStages && insertedStages.length > 0) {
+        const sampleCards = [
+          {
+            stage_id: insertedStages[0]?.id,
+            card_title: "Voice AI Appointment Assistant",
+            card_value: 50000,
+            card_order: 1,
+            checklist: [
+              { id: 1, text: "Script ready for Voiceover", completed: true },
+              { id: 2, text: "Voiceover ready and approved", completed: true },
+              { id: 3, text: "Milestone created / Payment entered", completed: false },
+              { id: 4, text: "Video ready", completed: false },
+            ],
+          },
+          {
+            stage_id: insertedStages[1]?.id || insertedStages[0]?.id,
+            card_title: "Multi-Channel Lead Triage Engine",
+            card_value: 75000,
+            card_order: 1,
+            checklist: [
+              { id: 1, text: "Requirements Gathered", completed: true },
+              { id: 2, text: "API Architecture Designed", completed: true },
+              { id: 3, text: "Integration Test", completed: false },
+            ],
+          },
+          {
+            stage_id: insertedStages[2]?.id || insertedStages[0]?.id,
+            card_title: "Enterprise Web Scraper & GHL Data Sync",
+            card_value: 60000,
+            card_order: 1,
+            checklist: [
+              { id: 1, text: "Data Schema Mapped", completed: true },
+              { id: 2, text: "GHL OAuth Setup", completed: false },
+            ],
+          },
+        ];
+
+        try {
+          await supabase.from("pipeline_cards").insert(sampleCards);
+        } catch (cardErr) {
+          console.warn("Card seed warning:", cardErr);
+        }
+      }
 
       if (onCreated) onCreated({ ...pipeline, stages: stagesData });
       onClose();
