@@ -19,14 +19,23 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
   };
 
   // Responsibilities
-  const [responsibilities, setResponsibilities] = useState(
-    card?.responsibilities || {
-      script: "Rahmat",
-      voiceOver: "Maaz",
-      videoEditing: "Usama",
-      thumbnail: "Rahmat",
-    }
-  );
+  const rawResp = card?.responsibilities || deal?.responsibilities || [
+    { role: "Script", person: "Rahmat" },
+    { role: "Voice Over", person: "Maaz" },
+    { role: "Video Editing", person: "Usama" },
+    { role: "Thumbnail", person: "Rahmat" },
+  ];
+
+  const initialResp = Array.isArray(rawResp)
+    ? rawResp
+    : typeof rawResp === "object" && rawResp !== null
+    ? Object.entries(rawResp).map(([role, person]) => ({ role, person }))
+    : [
+        { role: "Script", person: "Rahmat" },
+        { role: "Voice Over", person: "Maaz" },
+      ];
+
+  const [responsibilities, setResponsibilities] = useState(initialResp);
 
   // Workflow Checklist Items
   const defaultChecklist = [
@@ -214,6 +223,7 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
             card_value: value,
             assigned_to: assignedTo || null,
             checklist: checklist,
+            responsibilities: responsibilities,
           })
           .eq("id", card.id);
         if (updateErr) throw updateErr;
@@ -224,6 +234,7 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
             title: title,
             value: value,
             checklist: checklist,
+            responsibilities: responsibilities,
           })
           .eq("id", deal.id);
         if (updateErr) throw updateErr;
@@ -350,52 +361,66 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
               </div>
             </div>
 
-            {/* RESPONSIBILITIES Block (Editable Inputs) */}
+            {/* RESPONSIBILITIES Block (Dynamic Editable Role & Person Pairs) */}
             <div className="bg-paper border border-line/80 rounded-xl p-4">
-              <h3 className="text-xs font-bold text-ink/60 uppercase tracking-wider mb-2.5">
-                📋 Responsibilities & Team Leads
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div>
-                  <label className="text-ink/50 block text-[10px] font-bold uppercase mb-1">Script:</label>
-                  <input
-                    type="text"
-                    value={responsibilities.script || ""}
-                    onChange={(e) => setResponsibilities({ ...responsibilities, script: e.target.value })}
-                    placeholder="Rahmat"
-                    className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
-                <div>
-                  <label className="text-ink/50 block text-[10px] font-bold uppercase mb-1">Voice Over:</label>
-                  <input
-                    type="text"
-                    value={responsibilities.voiceOver || ""}
-                    onChange={(e) => setResponsibilities({ ...responsibilities, voiceOver: e.target.value })}
-                    placeholder="Maaz"
-                    className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
-                <div>
-                  <label className="text-ink/50 block text-[10px] font-bold uppercase mb-1">Video Editing:</label>
-                  <input
-                    type="text"
-                    value={responsibilities.videoEditing || ""}
-                    onChange={(e) => setResponsibilities({ ...responsibilities, videoEditing: e.target.value })}
-                    placeholder="Usama"
-                    className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
-                <div>
-                  <label className="text-ink/50 block text-[10px] font-bold uppercase mb-1">Thumbnail:</label>
-                  <input
-                    type="text"
-                    value={responsibilities.thumbnail || ""}
-                    onChange={(e) => setResponsibilities({ ...responsibilities, thumbnail: e.target.value })}
-                    placeholder="Rahmat"
-                    className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold text-ink/60 uppercase tracking-wider">
+                  📋 Responsibilities & Team Leads
+                </h3>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setResponsibilities([...responsibilities, { role: "", person: "" }])
+                  }
+                  className="text-[11px] bg-accent/10 text-accent font-bold px-2.5 py-1 rounded-lg hover:bg-accent/20 transition cursor-pointer"
+                >
+                  + Add Role / Person
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {responsibilities.map((resp, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={resp.role}
+                      onChange={(e) => {
+                        const updated = [...responsibilities];
+                        updated[idx].role = e.target.value;
+                        setResponsibilities(updated);
+                      }}
+                      placeholder="Role (e.g. Script, Voice Over, Thumbnail)"
+                      className="flex-1 px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                    <input
+                      type="text"
+                      value={resp.person}
+                      onChange={(e) => {
+                        const updated = [...responsibilities];
+                        updated[idx].person = e.target.value;
+                        setResponsibilities(updated);
+                      }}
+                      placeholder="Assignee (e.g. Rahmat, Maaz, Usama)"
+                      className="flex-1 px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setResponsibilities(responsibilities.filter((_, i) => i !== idx))
+                      }
+                      className="text-ink/40 hover:text-red-500 text-xs px-2 py-1 transition font-bold cursor-pointer"
+                      title="Remove Role"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+
+                {responsibilities.length === 0 && (
+                  <p className="text-xs text-ink/40 italic py-2">
+                    No responsibilities assigned. Click "+ Add Role / Person" above to assign team members.
+                  </p>
+                )}
               </div>
             </div>
 
