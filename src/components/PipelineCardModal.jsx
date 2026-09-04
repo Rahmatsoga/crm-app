@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { sendSMS, sendWhatsApp, logVoIPCall, getCommunicationLogs } from "../lib/twilioService";
+import { sendSMS, sendWhatsApp, logVoIPCall, getCommunicationLogs, triggerStageAutomation } from "../lib/twilioService";
 import { getMeetings, scheduleMeeting, generateGoogleCalendarUrl, generateZoomMeetingUrl } from "../lib/meetingService";
 
-export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdate }) {
+export function PipelineCardModal({ card, deal, clients, users, stages, onClose, onUpdate }) {
   // Navigation tab: 'overview' | 'twilio' | 'meetings'
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -11,7 +11,30 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
   const [title, setTitle] = useState(card?.title || card?.card_title || deal?.title || "");
   const [value, setValue] = useState(card?.value || card?.card_value || deal?.value || 0);
   const [assignedTo, setAssignedTo] = useState(card?.assigned_to || deal?.assigned_rep_id || "");
-  
+
+  // Current Stage State & Navigation
+  const initialStageKey = card?.stage_id || card?.stage || deal?.stage || "new";
+  const [currentStage, setCurrentStage] = useState(initialStageKey);
+
+  const availableStages = stages && stages.length > 0
+    ? stages
+    : [
+        { key: "new", label: "New" },
+        { key: "contacted", label: "Contacted" },
+        { key: "proposal", label: "Proposal" },
+        { key: "negotiation", label: "Negotiation" },
+        { key: "won", label: "Won" },
+        { key: "lost", label: "Lost" },
+      ];
+
+  const currentStageIndex = availableStages.findIndex(
+    (s) => (s.key || s.id) === currentStage
+  );
+  const nextStageObj =
+    currentStageIndex >= 0 && currentStageIndex < availableStages.length - 1
+      ? availableStages[currentStageIndex + 1]
+      : null;
+
   // Client Info for Twilio Communication
   const clientObj = clients?.find((c) => c.id === (deal?.client_id || card?.client_id)) || {
     name: deal?.clients?.name || card?.client_name || "Elevatech Client",
@@ -277,6 +300,7 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
           .update({
             card_title: title,
             card_value: value,
+            stage_id: currentStage,
             assigned_to: assignedTo || null,
             checklist: checklist,
             responsibilities: responsibilities,
@@ -289,11 +313,26 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
           .update({
             title: title,
             value: value,
+            stage: currentStage,
             checklist: checklist,
             responsibilities: responsibilities,
           })
           .eq("id", deal.id);
         if (updateErr) throw updateErr;
+      }
+
+      if (currentStage !== initialStageKey) {
+        const stageLabel =
+          availableStages.find((s) => (s.key || s.id) === currentStage)?.label ||
+          availableStages.find((s) => (s.key || s.id) === currentStage)?.stage_name ||
+          currentStage;
+        triggerStageAutomation({
+          stageName: stageLabel,
+          cardTitle: title,
+          dealId: deal?.id,
+          cardId: card?.id,
+          recipientPhone: phoneRecipient || clientObj.phone,
+        });
       }
 
       if (onUpdate) onUpdate();
@@ -320,15 +359,35 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
               className="text-xl font-bold text-ink w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-accent rounded px-1 -ml-1"
               placeholder="Card Title"
             />
-            <p className="text-xs text-ink/50 mt-1 flex items-center gap-1">
-              <span>in list</span>
-              <span className="font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">
-                {card?.stage_name || (deal?.stage ? deal.stage.toUpperCase() : "Video Editing: Ready to Review")}
-              </span>
+            <div className="text-xs text-ink/50 mt-1.5 flex items-center gap-2 flex-wrap">
+              <span className="font-medium">in list</span>
+              <select
+                value={currentStage}
+                onChange={(e) => setCurrentStage(e.target.value)}
+                className="font-bold text-accent bg-accent/10 border border-accent/30 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              >
+                {availableStages.map((s) => (
+                  <option key={s.key || s.id} value={s.key || s.id}>
+                    {(s.label || s.stage_name || s.key || s.id).toUpperCase()}
+                  </option>
+                ))}
+              </select>
+
+              {nextStageObj && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStage(nextStageObj.key || nextStageObj.id)}
+                  className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                  title={`Move deal to ${nextStageObj.label || nextStageObj.stage_name}`}
+                >
+                  <span>➡️ Move to {nextStageObj.label || nextStageObj.stage_name}</span>
+                </button>
+              )}
+
               <span className="text-ink/30">•</span>
-              <span>Client:</span>
+              <span className="font-medium">Client:</span>
               <span className="font-semibold text-ink">{clientObj.name}</span>
-            </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -392,7 +451,23 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
         {activeTab === "overview" && (
           <div className="space-y-6">
             {/* Top Info Grid */}
-            <div className="grid grid-cols-2 gap-4 p-3 bg-paper/60 rounded-xl border border-line/60">
+            <div className="grid grid-cols-3 gap-3 p-3 bg-paper/60 rounded-xl border border-line/60">
+              <div>
+                <label className="block text-[11px] uppercase font-bold text-ink/50 mb-1">
+                  Stage / Column
+                </label>
+                <select
+                  value={currentStage}
+                  onChange={(e) => setCurrentStage(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-line rounded-lg text-xs bg-white font-bold text-accent focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                >
+                  {availableStages.map((s) => (
+                    <option key={s.key || s.id} value={s.key || s.id}>
+                      {s.label || s.stage_name || s.key || s.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-[11px] uppercase font-bold text-ink/50 mb-1">
                   Value ($)
@@ -401,7 +476,7 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
                   type="number"
                   value={value}
                   onChange={(e) => setValue(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 border border-line rounded-lg text-sm bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-full px-3 py-1.5 border border-line rounded-lg text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div>
@@ -411,7 +486,7 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
                 <select
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
-                  className="w-full px-3 py-1.5 border border-line rounded-lg text-sm bg-white font-medium focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-full px-3 py-1.5 border border-line rounded-lg text-xs bg-white font-medium focus:outline-none focus:ring-1 focus:ring-accent"
                 >
                   <option value="">Unassigned</option>
                   {users && users.length > 0 ? (
