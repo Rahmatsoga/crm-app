@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendSMS, sendWhatsApp, logVoIPCall, getCommunicationLogs } from "../lib/twilioService";
+import { getMeetings, scheduleMeeting, generateGoogleCalendarUrl, generateZoomMeetingUrl } from "../lib/meetingService";
 
 export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdate }) {
-  // Navigation tab: 'overview' vs 'twilio'
+  // Navigation tab: 'overview' | 'twilio' | 'meetings'
   const [activeTab, setActiveTab] = useState("overview");
 
   // Title & Basic Info
@@ -74,18 +75,73 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
   const [callDuration, setCallDuration] = useState(0);
   const [callNotes, setCallNotes] = useState("");
 
-  // Load communication logs on modal open or tab change
+  // Meetings State
+  const [meetings, setMeetings] = useState([]);
+  const [mtgTitle, setMtgTitle] = useState("");
+  const [mtgType, setMtgType] = useState("discovery_call");
+  const [mtgDate, setMtgDate] = useState("");
+  const [mtgTime, setMtgTime] = useState("14:00");
+  const [mtgNotes, setMtgNotes] = useState("");
+  const [mtgSuccessMsg, setMtgSuccessMsg] = useState("");
+  const [schedulingMtg, setSchedulingMtg] = useState(false);
+
+  // Load communication logs & meetings on modal open or tab change
   useEffect(() => {
-    async function loadLogs() {
-      const logs = await getCommunicationLogs({
-        card_id: card?.id,
-        deal_id: deal?.id,
-        client_id: clientObj.id
-      });
+    async function loadLogsAndMeetings() {
+      const [logs, mtgs] = await Promise.all([
+        getCommunicationLogs({
+          card_id: card?.id,
+          deal_id: deal?.id,
+          client_id: clientObj.id,
+        }),
+        getMeetings({
+          card_id: card?.id,
+          deal_id: deal?.id,
+          client_id: clientObj.id,
+        }),
+      ]);
       setCommLogs(logs);
+      setMeetings(mtgs);
     }
-    loadLogs();
+    loadLogsAndMeetings();
   }, [card?.id, deal?.id, clientObj.id, activeTab]);
+
+  // Schedule New Meeting Handler
+  const handleScheduleMeetingSubmit = async (e) => {
+    e.preventDefault();
+    if (!mtgTitle.trim() || !mtgDate) return;
+    setSchedulingMtg(true);
+    setMtgSuccessMsg("");
+
+    const startTimeISO = new Date(`${mtgDate}T${mtgTime}:00`).toISOString();
+    await scheduleMeeting({
+      title: mtgTitle.trim(),
+      meeting_type: mtgType,
+      start_time: startTimeISO,
+      notes: mtgNotes,
+      card_id: card?.id,
+      deal_id: deal?.id,
+      client_id: clientObj.id,
+      client_phone: phoneRecipient || clientObj.phone,
+    });
+
+    setMtgSuccessMsg(
+      `🎉 Zoom & Google Calendar meeting scheduled! SMS confirmation dispatched to ${
+        phoneRecipient || clientObj.phone
+      }`
+    );
+    setMtgTitle("");
+    setMtgNotes("");
+    setSchedulingMtg(false);
+
+    const updated = await getMeetings({
+      card_id: card?.id,
+      deal_id: deal?.id,
+      client_id: clientObj.id,
+    });
+    setMeetings(updated);
+    setTimeout(() => setMtgSuccessMsg(""), 5000);
+  };
 
   // VoIP Call Timer
   useEffect(() => {
@@ -308,6 +364,20 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
             💬 Twilio Communications & Calls
             <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-extrabold">
               {commLogs.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("meetings")}
+            className={`px-4 py-2 text-xs font-bold transition border-b-2 -mb-px flex items-center gap-1.5 ${
+              activeTab === "meetings"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-ink/60 hover:text-ink"
+            }`}
+          >
+            📅 Zoom & Google Meetings
+            <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-extrabold">
+              {meetings.length}
             </span>
           </button>
         </div>
@@ -698,6 +768,182 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
                     No communication history yet. Send an SMS or start a call above!
                   </p>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: ZOOM & GOOGLE MEETINGS BOOKER */}
+        {activeTab === "meetings" && (
+          <div className="space-y-6">
+            {mtgSuccessMsg && (
+              <div className="p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-xs font-bold animate-pulse flex items-center justify-between">
+                <span>{mtgSuccessMsg}</span>
+                <button onClick={() => setMtgSuccessMsg("")} className="text-blue-600 font-bold ml-2">✕</button>
+              </div>
+            )}
+
+            {/* Fancy Zoom Live Launcher Card */}
+            <div className="p-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl shadow-xl border border-blue-700/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-600/30 rounded-xl text-xl border border-blue-500/40">📹</div>
+                  <div>
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-200">
+                      Zoom HD Video Call & Google Calendar Engine
+                    </h4>
+                    <p className="text-[11px] text-slate-300">
+                      Instant Meeting Booker with Twilio SMS Confirmations & Reminders
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-[10px] bg-blue-500/20 text-blue-300 font-mono font-bold px-2.5 py-1 rounded-full border border-blue-400/30 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span>
+                  Live Sync
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                <a
+                  href={generateZoomMeetingUrl(title)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                >
+                  <span>📹</span> Start Instant Zoom Meeting
+                </a>
+                <a
+                  href={generateGoogleCalendarUrl({ title: `Discovery Call — ${title}`, description: "Elevatech CRM Meeting", startTime: new Date().toISOString() })}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border border-slate-700 cursor-pointer"
+                >
+                  <span>📅</span> Open Google Calendar
+                </a>
+              </div>
+            </div>
+
+            {/* Meeting Booker Form */}
+            <div className="p-4 bg-paper rounded-2xl border border-line">
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <span>🗓️ Schedule New Client Meeting</span>
+              </h4>
+
+              <form onSubmit={handleScheduleMeetingSubmit} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-ink/60 uppercase mb-1">Meeting Title *</label>
+                    <input
+                      type="text"
+                      value={mtgTitle}
+                      onChange={(e) => setMtgTitle(e.target.value)}
+                      placeholder="e.g. Discovery Call & Proposal Review"
+                      className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-accent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-ink/60 uppercase mb-1">Meeting Type</label>
+                    <select
+                      value={mtgType}
+                      onChange={(e) => setMtgType(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-accent"
+                    >
+                      <option value="discovery_call">📞 Discovery Call</option>
+                      <option value="proposal_review">📄 Proposal Review</option>
+                      <option value="voiceover_review">🎙️ Voiceover & Script Review</option>
+                      <option value="demo">💻 Live Platform Demo</option>
+                      <option value="project_kickoff">🚀 Project Kickoff</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-ink/60 uppercase mb-1">Date *</label>
+                    <input
+                      type="date"
+                      value={mtgDate}
+                      onChange={(e) => setMtgDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-accent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-ink/60 uppercase mb-1">Time</label>
+                    <input
+                      type="time"
+                      value={mtgTime}
+                      onChange={(e) => setMtgTime(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-ink/60 uppercase mb-1">Meeting Notes / Agenda</label>
+                  <input
+                    type="text"
+                    value={mtgNotes}
+                    onChange={(e) => setMtgNotes(e.target.value)}
+                    placeholder="Agenda notes for client..."
+                    className="w-full px-3 py-2 bg-white border border-line rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={schedulingMtg || !mtgTitle.trim() || !mtgDate}
+                  className="w-full py-2.5 bg-accent hover:opacity-90 text-white font-bold text-xs rounded-xl transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {schedulingMtg ? "Scheduling & Dispatched SMS..." : "🚀 Schedule Meeting + Send Twilio SMS & Google Cal Link"}
+                </button>
+              </form>
+            </div>
+
+            {/* Scheduled Meetings Timeline */}
+            <div>
+              <h4 className="text-xs font-bold text-ink/70 uppercase tracking-wider mb-3 flex items-center justify-between">
+                <span>📅 Scheduled Meetings ({meetings.length})</span>
+              </h4>
+
+              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                {meetings.map((m) => (
+                  <div key={m.id} className="p-3 bg-white border border-line rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-blue-400 transition">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-ink">{m.title}</span>
+                        <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full capitalize">
+                          {m.meeting_type?.replace("_", " ")}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-ink/60 mt-0.5 flex items-center gap-2">
+                        <span>🗓️ {new Date(m.start_time).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                        <span>• Host: {m.host_name || "Admin"}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={m.zoom_join_url || generateZoomMeetingUrl(m.title)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="bg-blue-600 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg hover:bg-blue-500 transition shadow-2xs flex items-center gap-1"
+                      >
+                        <span>📹</span> Join Zoom
+                      </a>
+                      <a
+                        href={m.google_calendar_url || generateGoogleCalendarUrl({ title: m.title, startTime: m.start_time })}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="bg-paper border border-line text-ink font-semibold text-[11px] px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition"
+                      >
+                        📅 Cal
+                      </a>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
