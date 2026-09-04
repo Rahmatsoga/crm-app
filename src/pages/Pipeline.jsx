@@ -448,6 +448,7 @@ export default function Pipeline() {
           >
             <span>+</span> Add New Pipeline
           </button>
+        </div>
       </div>
 
       {twilioBanner && (
