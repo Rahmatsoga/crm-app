@@ -46,23 +46,17 @@ ALTER TABLE public.communication_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pipeline_automation_rules ENABLE ROW LEVEL SECURITY;
 
 -- 5. RLS Policies
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'communication_logs' AND policyname = 'Allow full access to communication_logs'
-  ) THEN
-    CREATE POLICY "Allow full access to communication_logs" 
-    ON public.communication_logs FOR ALL 
-    USING (auth.role() = 'authenticated' OR auth.role() = 'anon') 
-    WITH CHECK (auth.role() = 'authenticated' OR auth.role() = 'anon');
-  END IF;
+DROP POLICY IF EXISTS "Allow full access to communication_logs" ON public.communication_logs;
+CREATE POLICY "Allow full access to communication_logs" 
+ON public.communication_logs FOR ALL 
+USING (true) 
+WITH CHECK (true);
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'pipeline_automation_rules' AND policyname = 'Allow full access to pipeline_automation_rules'
-  ) THEN
-    CREATE POLICY "Allow full access to pipeline_automation_rules" 
-    ON public.pipeline_automation_rules FOR ALL 
-    USING (auth.role() = 'authenticated' OR auth.role() = 'anon') 
-    WITH CHECK (auth.role() = 'authenticated' OR auth.role() = 'anon');
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "Allow full access to pipeline_automation_rules" ON public.pipeline_automation_rules;
+CREATE POLICY "Allow full access to pipeline_automation_rules" 
+ON public.pipeline_automation_rules FOR ALL 
+USING (true) 
+WITH CHECK (true);
+
+-- 6. Verification Output
+SELECT 'Twilio tables created successfully!' AS status;
