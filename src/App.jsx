@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Pipeline from "./pages/Pipeline";
+import Meetings from "./pages/Meetings";
 import Projects from "./pages/Projects";
 import Invoices from "./pages/Invoices";
 import Documents from "./pages/Documents";
@@ -76,6 +77,7 @@ function AppRoutes() {
         <Route path="clients" element={<Clients />} />
         <Route path="clients/:id" element={<ClientDetail />} />
         <Route path="pipeline" element={<Pipeline />} />
+        <Route path="meetings" element={<Meetings />} />
         <Route
           path="projects"
           element={
