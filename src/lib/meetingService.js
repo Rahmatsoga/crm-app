@@ -64,10 +64,15 @@ export function generateZoomMeetingUrl(meetingTitle, customZoomUrl) {
   return "https://zoom.us/join";
 }
 
-// Helper for instant 1-click open WebRTC video room (no login/moderator required)
+// Helper for instant 1-click open WebRTC video room
 export function generateInstantVideoUrl() {
   const roomHash = Math.random().toString(36).substring(2, 10);
   return `https://meet.jit.si/room-${roomHash}`;
+}
+
+// Helper for Google Meet Instant Meeting
+export function generateGoogleMeetUrl() {
+  return "https://meet.google.com/new";
 }
 
 // Schedule New Meeting Function
