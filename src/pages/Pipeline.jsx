@@ -488,105 +488,52 @@ export default function Pipeline() {
   return (
     <div className="p-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl font-bold text-ink">Sales Pipeline & Workflows</h1>
-          <p className="text-sm text-ink/50 mt-0.5">
+          <p className="text-xs text-ink/50 mt-0.5">
             {selectedPipelineId === "default"
               ? `${deals.length} deals in main pipeline`
               : `${activePipelineObj?.pipeline_name || "Custom Pipeline"} (${customStages.length} stages)`}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Clean Inline Pipeline Switcher Dropdown */}
+          <div className="flex items-center gap-1.5 bg-white border border-line rounded-xl p-1 shadow-2xs">
+            <span className="text-[10px] font-bold text-ink/50 uppercase px-2">Pipeline:</span>
+            <select
+              value={selectedPipelineId}
+              onChange={(e) => setSelectedPipelineId(e.target.value)}
+              className="text-xs px-3 py-1.5 bg-paper hover:bg-slate-100 border border-line/60 rounded-lg text-ink font-bold focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            >
+              <option value="default">📊 Main Sales Pipeline ({deals.length} deals)</option>
+              {customPipelines.map((p) => (
+                <option key={p.id} value={p.id}>
+                  ⚡ {p.pipeline_name} ({p.pipeline_stages?.length || 0} stages)
+                </option>
+              ))}
+            </select>
+
+            {selectedPipelineId !== "default" && (
+              <button
+                type="button"
+                onClick={() => handleDeletePipeline(selectedPipelineId)}
+                className="text-ink/40 hover:text-red-600 text-xs px-2 py-1 transition font-bold cursor-pointer"
+                title="Delete current pipeline"
+              >
+                🗑️
+              </button>
+            )}
+          </div>
+
           <button
             onClick={() => setShowBuilder(true)}
-            className="bg-accent text-white text-sm font-semibold rounded-xl px-4 py-2 hover:opacity-90 shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            className="bg-accent text-white text-xs font-semibold rounded-xl px-4 py-2.5 hover:opacity-90 shadow-sm transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <span>+</span> Add New Pipeline
           </button>
         </div>
-      </div>
-
-      {/* Pipeline Selection Tabs & Dropdown Bar */}
-      <div className="mb-6 p-2 bg-white border border-line rounded-2xl shadow-2xs flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
-          <span className="text-[11px] font-bold text-ink/50 uppercase px-2 whitespace-nowrap">
-            Pipelines ({1 + customPipelines.length}):
-          </span>
-
-          {/* Main Sales Pipeline (Default) Tab */}
-          <button
-            type="button"
-            onClick={() => setSelectedPipelineId("default")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-              selectedPipelineId === "default"
-                ? "bg-accent text-white shadow-xs"
-                : "bg-paper text-ink/70 hover:text-ink hover:bg-slate-100"
-            }`}
-          >
-            📊 Main Sales Pipeline
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                selectedPipelineId === "default" ? "bg-white/20 text-white" : "bg-line/60 text-ink/60"
-              }`}
-            >
-              {deals.length}
-            </span>
-          </button>
-
-          {/* Custom Created Pipelines Tabs */}
-          {customPipelines.map((p) => (
-            <div key={p.id} className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setSelectedPipelineId(p.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                  selectedPipelineId === p.id
-                    ? "bg-accent text-white shadow-xs"
-                    : "bg-paper text-ink/70 hover:text-ink hover:bg-slate-100"
-                }`}
-              >
-                ⚡ {p.pipeline_name}
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                    selectedPipelineId === p.id ? "bg-white/20 text-white" : "bg-line/60 text-ink/60"
-                  }`}
-                >
-                  {p.pipeline_stages?.length || 0} stages
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeletePipeline(p.id);
-                }}
-                className="text-ink/40 hover:text-red-600 text-xs px-1.5 py-0.5 rounded transition font-bold cursor-pointer"
-                title="Delete this custom pipeline"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* Quick Dropdown for easy switching */}
-        {customPipelines.length > 0 && (
-          <select
-            value={selectedPipelineId}
-            onChange={(e) => setSelectedPipelineId(e.target.value)}
-            className="text-xs px-3 py-1.5 border border-line rounded-xl bg-paper text-ink font-semibold focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          >
-            <option value="default">📊 Main Sales Pipeline (Default)</option>
-            {customPipelines.map((p) => (
-              <option key={p.id} value={p.id}>
-                ⚡ {p.pipeline_name} ({p.pipeline_stages?.length || 0} stages)
-              </option>
-            ))}
-          </select>
-        )}
       </div>
 
       {twilioBanner && (
