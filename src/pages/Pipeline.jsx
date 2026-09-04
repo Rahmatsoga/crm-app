@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import PipelineBuilder from "../components/PipelineBuilder";
 import PipelineCardModal from "../components/PipelineCardModal";
+import { triggerStageAutomation } from "../lib/twilioService";
 
 const INITIAL_DEFAULT_STAGES = [
   { key: "new", label: "New" },
@@ -348,10 +349,30 @@ export default function Pipeline() {
     setEditingStageKey(null);
   }
 
+  // Twilio Workflow Banner Notification
+  const [twilioBanner, setTwilioBanner] = useState("");
+
   async function moveStage(dealId, stage) {
+    const targetStageObj = defaultStageList.find((s) => s.key === stage);
+    const targetStageLabel = targetStageObj ? targetStageObj.label : stage;
+    const targetDeal = deals.find((d) => d.id === dealId);
+
     setDeals((prev) =>
       prev.map((d) => (d.id === dealId ? { ...d, stage: stage } : d))
     );
+
+    // Trigger Automated Twilio SMS/WhatsApp
+    if (targetDeal) {
+      triggerStageAutomation({
+        stageName: targetStageLabel,
+        cardTitle: targetDeal.title,
+        dealId: targetDeal.id,
+        recipientPhone: targetDeal.clients?.phone || "+15550001111",
+      });
+      setTwilioBanner(`🚀 Twilio Workflow: Triggered automated SMS/WhatsApp for "${targetDeal.title}" on transition to "${targetStageLabel}"`);
+      setTimeout(() => setTwilioBanner(""), 5000);
+    }
+
     try {
       await supabase.from("deals").update({ stage }).eq("id", dealId);
     } catch (e) {
@@ -360,9 +381,26 @@ export default function Pipeline() {
   }
 
   async function moveCustomCardStage(cardId, newStageId) {
+    const targetStageObj = customStages.find((s) => s.id === newStageId);
+    const targetStageLabel = targetStageObj ? targetStageObj.stage_name : newStageId;
+    const targetCard = customCards.find((c) => c.id === cardId);
+
     setCustomCards((prev) =>
       prev.map((c) => (c.id === cardId ? { ...c, stage_id: newStageId } : c))
     );
+
+    // Trigger Automated Twilio SMS/WhatsApp
+    if (targetCard) {
+      triggerStageAutomation({
+        stageName: targetStageLabel,
+        cardTitle: targetCard.card_title,
+        cardId: targetCard.id,
+        recipientPhone: targetCard.client_phone || "+15550001111",
+      });
+      setTwilioBanner(`🚀 Twilio Workflow: Triggered automated SMS/WhatsApp for "${targetCard.card_title}" on transition to "${targetStageLabel}"`);
+      setTimeout(() => setTwilioBanner(""), 5000);
+    }
+
     try {
       await supabase.from("pipeline_cards").update({ stage_id: newStageId }).eq("id", cardId);
     } catch (e) {
@@ -410,8 +448,14 @@ export default function Pipeline() {
           >
             <span>+</span> Add New Pipeline
           </button>
-        </div>
       </div>
+
+      {twilioBanner && (
+        <div className="mb-6 p-3 bg-emerald-500 text-white font-semibold rounded-2xl text-xs flex items-center justify-between shadow-md animate-bounce">
+          <span>{twilioBanner}</span>
+          <button onClick={() => setTwilioBanner("")} className="text-white/80 hover:text-white font-bold ml-2">✕</button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-2 mb-6 border-b border-line pb-3 overflow-x-auto">
