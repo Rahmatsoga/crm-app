@@ -18,13 +18,16 @@ A production-ready, role-based Customer Relationship Management (CRM) system bui
 
 ---
 
-## 📸 Application Screenshots
+## 📸 Authentic Application Screenshots
 
 ### 📋 Trello-Style Kanban Sales Pipeline Board
-![Trello Sales Board](./public/screenshots/pipeline_board.jpg)
+![Trello Sales Board](public/screenshots/pipeline.png)
 
-### 💬 Twilio Communication Center & WebRTC Call Dialer
-![Twilio Card Modal](./public/screenshots/twilio_modal.jpg)
+### 📊 Executive Dashboard & Revenue Analytics
+![CRM Dashboard](public/screenshots/dashboard.png)
+
+### 👥 Client & Company Management
+![Clients Directory](public/screenshots/clients.png)
 
 ---
 
