@@ -693,13 +693,6 @@ export default function Pipeline() {
                         </div>
                       </div>
                     ) : (
-                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
                       <button
                         onClick={() => {
                           setAddingCardStage(stage.key);
@@ -902,13 +895,6 @@ export default function Pipeline() {
                           </button>
                           <button
                             onClick={() => setAddingCardStage(null)}
-                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
                             className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
                           >
                             Cancel
