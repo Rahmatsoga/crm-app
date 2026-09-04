@@ -175,9 +175,24 @@ export default function Pipeline() {
       ]);
 
       if (d.data && d.data.length > 0) {
-        setDeals(d.data);
-      } else {
-        setDeals(DEFAULT_SAMPLE_DEALS);
+        setDeals((prevDeals) => {
+          const dealMap = new Map();
+          d.data.forEach((item) => dealMap.set(item.id, item));
+          prevDeals.forEach((item) => {
+            if (!dealMap.has(item.id)) {
+              dealMap.set(item.id, item);
+            } else {
+              const dbItem = dealMap.get(item.id);
+              dealMap.set(item.id, {
+                ...dbItem,
+                stage: item.stage || dbItem.stage,
+                checklist: item.checklist || dbItem.checklist,
+                responsibilities: item.responsibilities || dbItem.responsibilities,
+              });
+            }
+          });
+          return Array.from(dealMap.values());
+        });
       }
 
       setClients(c.data ?? []);
@@ -1121,7 +1136,41 @@ export default function Pipeline() {
             setSelectedCard(null);
             setSelectedDeal(null);
           }}
-          onUpdate={() => {
+          onUpdate={(updatedData) => {
+            if (updatedData && updatedData.id) {
+              if (selectedDeal) {
+                setDeals((prev) =>
+                  prev.map((d) =>
+                    d.id === updatedData.id
+                      ? {
+                          ...d,
+                          title: updatedData.title,
+                          value: updatedData.value,
+                          stage: updatedData.stage,
+                          checklist: updatedData.checklist,
+                          responsibilities: updatedData.responsibilities,
+                        }
+                      : d
+                  )
+                );
+              }
+              if (selectedCard) {
+                setCustomCards((prev) =>
+                  prev.map((c) =>
+                    c.id === updatedData.id
+                      ? {
+                          ...c,
+                          card_title: updatedData.title,
+                          card_value: updatedData.value,
+                          stage_id: updatedData.stage_id,
+                          checklist: updatedData.checklist,
+                          responsibilities: updatedData.responsibilities,
+                        }
+                      : c
+                  )
+                );
+              }
+            }
             load();
             if (selectedPipelineId !== "default") {
               loadCustomPipelineData(selectedPipelineId);
