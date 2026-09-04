@@ -9,6 +9,8 @@ export const SAMPLE_MEETINGS = [
     meeting_type: "discovery_call",
     client_name: "Apex Dental Group",
     client_phone: "+1 (555) 234-5678",
+    meeting_id: "836 485 9102",
+    passcode: "ELEV88",
     start_time: new Date(Date.now() + 3600000 * 2).toISOString(),
     end_time: new Date(Date.now() + 3600000 * 3).toISOString(),
     zoom_join_url: "https://zoom.us/join",
@@ -23,6 +25,8 @@ export const SAMPLE_MEETINGS = [
     meeting_type: "voiceover_review",
     client_name: "SaaSify Scale",
     client_phone: "+1 (555) 987-6543",
+    meeting_id: "912 304 8810",
+    passcode: "MAAZ07",
     start_time: new Date(Date.now() + 3600000 * 24).toISOString(),
     end_time: new Date(Date.now() + 3600000 * 25).toISOString(),
     zoom_join_url: "https://zoom.us/join",
@@ -62,10 +66,16 @@ export function generateZoomMeetingUrl(meetingTitle, customZoomUrl) {
 
 // Schedule New Meeting Function
 export async function scheduleMeeting(meetingData) {
-  const zoomUrl = generateZoomMeetingUrl(meetingData.title);
+  const meetingId = meetingData.custom_meeting_id || `${Math.floor(100 + Math.random() * 900)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`;
+  const passcode = meetingData.custom_passcode || Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  const zoomUrl = meetingData.custom_zoom_link && meetingData.custom_zoom_link.trim()
+    ? meetingData.custom_zoom_link.trim()
+    : `https://zoom.us/join`;
+
   const gcalUrl = generateGoogleCalendarUrl({
     title: meetingData.title,
-    description: meetingData.notes,
+    description: `Meeting ID: ${meetingId} | Passcode: ${passcode}\n${meetingData.notes || ""}`,
     startTime: meetingData.start_time,
     endTime: meetingData.end_time,
     location: zoomUrl,
@@ -77,6 +87,8 @@ export async function scheduleMeeting(meetingData) {
     card_id: meetingData.card_id || null,
     title: meetingData.title,
     meeting_type: meetingData.meeting_type || "discovery_call",
+    meeting_id: meetingId,
+    passcode: passcode,
     start_time: meetingData.start_time,
     end_time: meetingData.end_time || new Date(new Date(meetingData.start_time).getTime() + 1800000).toISOString(),
     location_or_url: zoomUrl,
@@ -109,7 +121,7 @@ export async function scheduleMeeting(meetingData) {
       hour: "2-digit",
       minute: "2-digit",
     });
-    const message = `📅 Elevatech Confirmation: Your meeting "${meetingData.title}" is scheduled for ${timeFormatted}.\nZoom Link: ${zoomUrl}\nGoogle Cal: ${gcalUrl}`;
+    const message = `📅 Elevatech Confirmation: Your meeting "${meetingData.title}" is scheduled for ${timeFormatted}.\nMeeting ID: ${meetingId}\nPasscode: ${passcode}\nZoom Link: ${zoomUrl}\nGoogle Cal: ${gcalUrl}`;
     
     sendSMS({
       to: meetingData.client_phone,
