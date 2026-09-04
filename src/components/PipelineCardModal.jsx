@@ -253,8 +253,14 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
               className="text-xl font-bold text-ink w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-accent rounded px-1 -ml-1"
               placeholder="Card Title"
             />
-            <p className="text-xs text-ink/50 mt-1">
-              Client: <span className="font-semibold text-ink">{clientObj.name}</span> ({clientObj.phone})
+            <p className="text-xs text-ink/50 mt-1 flex items-center gap-1">
+              <span>in list</span>
+              <span className="font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">
+                {card?.stage_name || (deal?.stage ? deal.stage.toUpperCase() : "Video Editing: Ready to Review")}
+              </span>
+              <span className="text-ink/30">•</span>
+              <span>Client:</span>
+              <span className="font-semibold text-ink">{clientObj.name}</span>
             </p>
           </div>
           <button

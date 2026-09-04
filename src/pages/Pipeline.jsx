@@ -436,13 +436,6 @@ export default function Pipeline() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setShowAddDealForm((v) => !v)}
-            className="bg-paper border border-line text-ink text-sm font-semibold rounded-xl px-4 py-2 hover:bg-line/40 transition"
-          >
-            {showAddDealForm ? "Cancel Deal" : "+ Add Deal"}
-          </button>
-
-          <button
             onClick={() => setShowBuilder(true)}
             className="bg-accent text-white text-sm font-semibold rounded-xl px-4 py-2 hover:opacity-90 shadow-sm transition flex items-center gap-1.5"
           >
@@ -535,36 +528,30 @@ export default function Pipeline() {
                         <div
                           key={d.id}
                           onClick={() => setSelectedDeal(d)}
-                          className="bg-paper border border-line hover:border-accent/40 rounded-xl p-3 shadow-xs transition cursor-pointer group"
+                          className="bg-paper hover:bg-white border border-line hover:border-accent/50 rounded-xl p-3 shadow-xs hover:shadow-md transition-all cursor-pointer group space-y-2"
                         >
-                          <p className="text-xs font-bold text-ink mb-1 group-hover:text-accent transition">
+                          <p className="text-xs font-bold text-ink group-hover:text-accent transition leading-snug">
                             {d.title}
                           </p>
-                          <p className="text-[11px] text-ink/60 mb-2">
+                          <p className="text-[11px] font-medium text-ink/60">
                             {d.clients?.company_name || d.clients?.name || "Elevatech Client"}
                           </p>
-                          <div className="flex items-center justify-between mb-2">
+
+                          {/* Responsibilities Tags (Trello Card Style) */}
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">Script: Rahmat</span>
+                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">Voice: Maaz</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1.5 border-t border-line/60">
                             <p className="text-xs font-bold text-accent">
                               {d.value ? `$${Number(d.value).toLocaleString()}` : "$0"}
                             </p>
                             {/* Checklist Summary Badge */}
-                            <span className="text-[10px] bg-accent/10 text-accent font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span className="text-[10px] bg-accent/10 text-accent font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                               <span>☑</span> {summary.completed}/{summary.total} ({summary.percent}%)
                             </span>
                           </div>
-
-                          <select
-                            onClick={(e) => e.stopPropagation()}
-                            value={d.stage}
-                            onChange={(e) => moveStage(d.id, e.target.value)}
-                            className="w-full text-[11px] bg-white border border-line rounded-lg px-2 py-1 focus:outline-none"
-                          >
-                            {defaultStageList.map((s) => (
-                              <option key={s.key} value={s.key}>
-                                Move to: {s.label}
-                              </option>
-                            ))}
-                          </select>
                         </div>
                       );
                     })}
@@ -679,32 +666,26 @@ export default function Pipeline() {
                         <div
                           key={card.id}
                           onClick={() => setSelectedCard(card)}
-                          className="bg-paper border border-line rounded-xl p-3 shadow-xs hover:border-accent/40 transition cursor-pointer group"
+                          className="bg-paper hover:bg-white border border-line hover:border-accent/50 rounded-xl p-3 shadow-xs hover:shadow-md transition-all cursor-pointer group space-y-2"
                         >
-                          <p className="text-xs font-bold text-ink mb-1 group-hover:text-accent transition">
+                          <p className="text-xs font-bold text-ink group-hover:text-accent transition leading-snug">
                             {card.card_title}
                           </p>
-                          <div className="flex items-center justify-between mb-2">
+                          
+                          {/* Responsibilities Tags (Trello Card Style) */}
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">Script: Rahmat</span>
+                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">Voice: Maaz</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1.5 border-t border-line/60">
                             <p className="text-xs font-bold text-accent">
                               {card.card_value ? `$${Number(card.card_value).toLocaleString()}` : "$0"}
                             </p>
-                            <span className="text-[10px] bg-accent/10 text-accent font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span className="text-[10px] bg-accent/10 text-accent font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                               <span>☑</span> {summary.completed}/{summary.total} ({summary.percent}%)
                             </span>
                           </div>
-
-                          <select
-                            onClick={(e) => e.stopPropagation()}
-                            value={card.stage_id}
-                            onChange={(e) => moveCustomCardStage(card.id, e.target.value)}
-                            className="w-full text-[11px] bg-white border border-line rounded-lg px-2 py-1 focus:outline-none"
-                          >
-                            {customStages.map((st) => (
-                              <option key={st.id} value={st.id}>
-                                Move to: {st.stage_name}
-                              </option>
-                            ))}
-                          </select>
                         </div>
                       );
                     })}
