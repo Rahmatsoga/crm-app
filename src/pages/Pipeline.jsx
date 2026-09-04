@@ -559,48 +559,60 @@ export default function Pipeline() {
                   <div className="mt-3 pt-2 border-t border-line/60">
                     {addingCardStage === stage.key ? (
                       <div className="space-y-2 bg-paper p-2.5 rounded-xl border border-accent/40 shadow-xs">
-                        <input
-                          type="text"
-                          value={quickTitle}
-                          onChange={(e) => setQuickTitle(e.target.value)}
-                          placeholder="Card title (e.g. 070 Sea Disasters)"
-                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent font-semibold"
-                          autoFocus
-                          onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.key)}
-                        />
-                        <input
-                          type="number"
-                          value={quickValue}
-                          onChange={(e) => setQuickValue(e.target.value)}
-                          placeholder="Value ($)"
-                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
-                        />
+                        <div>
+                          <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Card Title</label>
+                          <input
+                            type="text"
+                            value={quickTitle}
+                            onChange={(e) => setQuickTitle(e.target.value)}
+                            placeholder="e.g. 070 Sea Disasters"
+                            className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent font-semibold"
+                            autoFocus
+                            onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.key)}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Value ($)</label>
+                          <input
+                            type="number"
+                            value={quickValue}
+                            onChange={(e) => setQuickValue(e.target.value)}
+                            placeholder="e.g. 5000"
+                            className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
+                          />
+                        </div>
                         <div className="grid grid-cols-2 gap-1.5">
-                          <input
-                            type="text"
-                            value={quickScript}
-                            onChange={(e) => setQuickScript(e.target.value)}
-                            placeholder="Script: Rahmat"
-                            className="text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            value={quickVoice}
-                            onChange={(e) => setQuickVoice(e.target.value)}
-                            placeholder="Voice: Maaz"
-                            className="text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
-                          />
+                          <div>
+                            <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Script Lead</label>
+                            <input
+                              type="text"
+                              value={quickScript}
+                              onChange={(e) => setQuickScript(e.target.value)}
+                              placeholder="e.g. Rahmat"
+                              className="w-full text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Voice Over</label>
+                            <input
+                              type="text"
+                              value={quickVoice}
+                              onChange={(e) => setQuickVoice(e.target.value)}
+                              placeholder="e.g. Maaz"
+                              className="w-full text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
+                            />
+                          </div>
                         </div>
                         <div className="flex gap-2 pt-1">
                           <button
                             onClick={() => handleQuickAddCard(stage.key)}
-                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1 shadow-2xs"
+                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1 shadow-2xs cursor-pointer"
                           >
                             Add Card
                           </button>
                           <button
                             onClick={() => setAddingCardStage(null)}
-                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1"
+                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -708,48 +720,60 @@ export default function Pipeline() {
                   <div className="mt-3 pt-2 border-t border-line/60">
                     {addingCardStage === stage.id ? (
                       <div className="space-y-2 bg-paper p-2.5 rounded-xl border border-accent/40 shadow-xs">
-                        <input
-                          type="text"
-                          value={quickTitle}
-                          onChange={(e) => setQuickTitle(e.target.value)}
-                          placeholder="Card title (e.g. 070 Sea Disasters)"
-                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent font-semibold"
-                          autoFocus
-                          onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.id)}
-                        />
-                        <input
-                          type="number"
-                          value={quickValue}
-                          onChange={(e) => setQuickValue(e.target.value)}
-                          placeholder="Value ($)"
-                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
-                        />
+                        <div>
+                          <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Card Title</label>
+                          <input
+                            type="text"
+                            value={quickTitle}
+                            onChange={(e) => setQuickTitle(e.target.value)}
+                            placeholder="e.g. 070 Sea Disasters"
+                            className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent font-semibold"
+                            autoFocus
+                            onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.id)}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Value ($)</label>
+                          <input
+                            type="number"
+                            value={quickValue}
+                            onChange={(e) => setQuickValue(e.target.value)}
+                            placeholder="e.g. 5000"
+                            className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
+                          />
+                        </div>
                         <div className="grid grid-cols-2 gap-1.5">
-                          <input
-                            type="text"
-                            value={quickScript}
-                            onChange={(e) => setQuickScript(e.target.value)}
-                            placeholder="Script: Rahmat"
-                            className="text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            value={quickVoice}
-                            onChange={(e) => setQuickVoice(e.target.value)}
-                            placeholder="Voice: Maaz"
-                            className="text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
-                          />
+                          <div>
+                            <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Script Lead</label>
+                            <input
+                              type="text"
+                              value={quickScript}
+                              onChange={(e) => setQuickScript(e.target.value)}
+                              placeholder="e.g. Rahmat"
+                              className="w-full text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Voice Over</label>
+                            <input
+                              type="text"
+                              value={quickVoice}
+                              onChange={(e) => setQuickVoice(e.target.value)}
+                              placeholder="e.g. Maaz"
+                              className="w-full text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
+                            />
+                          </div>
                         </div>
                         <div className="flex gap-2 pt-1">
                           <button
                             onClick={() => handleQuickAddCard(stage.id)}
-                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1 shadow-2xs"
+                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1 shadow-2xs cursor-pointer"
                           >
                             Add Card
                           </button>
                           <button
                             onClick={() => setAddingCardStage(null)}
-                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1"
+                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
                           >
                             Cancel
                           </button>

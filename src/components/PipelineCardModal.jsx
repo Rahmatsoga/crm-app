@@ -105,7 +105,7 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
 
   // Add new checklist item
   const handleAddItem = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!newItemText.trim()) return;
     const newItem = {
       id: Date.now(),
@@ -350,27 +350,51 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
               </div>
             </div>
 
-            {/* RESPONSIBILITIES Block */}
+            {/* RESPONSIBILITIES Block (Editable Inputs) */}
             <div className="bg-paper border border-line/80 rounded-xl p-4">
               <h3 className="text-xs font-bold text-ink/60 uppercase tracking-wider mb-2.5">
-                📋 Responsibilities
+                📋 Responsibilities & Team Leads
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <span className="text-ink/50 block text-[10px]">Script:</span>
-                  <span className="font-semibold text-ink">{responsibilities.script}</span>
+                  <label className="text-ink/50 block text-[10px] font-bold uppercase mb-1">Script:</label>
+                  <input
+                    type="text"
+                    value={responsibilities.script || ""}
+                    onChange={(e) => setResponsibilities({ ...responsibilities, script: e.target.value })}
+                    placeholder="Rahmat"
+                    className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
                 </div>
                 <div>
-                  <span className="text-ink/50 block text-[10px]">Voice Over:</span>
-                  <span className="font-semibold text-ink">{responsibilities.voiceOver}</span>
+                  <label className="text-ink/50 block text-[10px] font-bold uppercase mb-1">Voice Over:</label>
+                  <input
+                    type="text"
+                    value={responsibilities.voiceOver || ""}
+                    onChange={(e) => setResponsibilities({ ...responsibilities, voiceOver: e.target.value })}
+                    placeholder="Maaz"
+                    className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
                 </div>
                 <div>
-                  <span className="text-ink/50 block text-[10px]">Video Editing:</span>
-                  <span className="font-semibold text-ink">{responsibilities.videoEditing}</span>
+                  <label className="text-ink/50 block text-[10px] font-bold uppercase mb-1">Video Editing:</label>
+                  <input
+                    type="text"
+                    value={responsibilities.videoEditing || ""}
+                    onChange={(e) => setResponsibilities({ ...responsibilities, videoEditing: e.target.value })}
+                    placeholder="Usama"
+                    className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
                 </div>
                 <div>
-                  <span className="text-ink/50 block text-[10px]">Thumbnail:</span>
-                  <span className="font-semibold text-ink">{responsibilities.thumbnail}</span>
+                  <label className="text-ink/50 block text-[10px] font-bold uppercase mb-1">Thumbnail:</label>
+                  <input
+                    type="text"
+                    value={responsibilities.thumbnail || ""}
+                    onChange={(e) => setResponsibilities({ ...responsibilities, thumbnail: e.target.value })}
+                    placeholder="Rahmat"
+                    className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs font-semibold text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
                 </div>
               </div>
             </div>
@@ -428,21 +452,28 @@ export function PipelineCardModal({ card, deal, clients, users, onClose, onUpdat
                 ))}
               </div>
 
-              <form onSubmit={handleAddItem} className="flex gap-2">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={newItemText}
                   onChange={(e) => setNewItemText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddItem(e);
+                    }
+                  }}
                   placeholder="Add a checklist item (e.g. Script ready for Voiceover)..."
                   className="flex-1 px-3 py-2 border border-line rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <button
-                  type="submit"
-                  className="px-4 py-2 bg-paper border border-line hover:bg-line/40 text-ink text-xs font-semibold rounded-xl transition"
+                  type="button"
+                  onClick={handleAddItem}
+                  className="px-4 py-2 bg-accent hover:opacity-90 text-white text-xs font-bold rounded-xl transition shadow-2xs cursor-pointer"
                 >
                   + Add item
                 </button>
-              </form>
+              </div>
             </div>
           </div>
         )}
