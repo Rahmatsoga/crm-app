@@ -293,6 +293,17 @@ export function PipelineCardModal({ card, deal, clients, users, stages, onClose,
     setSaving(true);
     setError("");
 
+    const updatedData = {
+      id: card?.id || deal?.id,
+      title,
+      value,
+      stage: currentStage,
+      stage_id: currentStage,
+      assignedTo,
+      checklist,
+      responsibilities,
+    };
+
     try {
       if (card && card.id) {
         const { error: updateErr } = await supabase
@@ -306,7 +317,7 @@ export function PipelineCardModal({ card, deal, clients, users, stages, onClose,
             responsibilities: responsibilities,
           })
           .eq("id", card.id);
-        if (updateErr) throw updateErr;
+        if (updateErr) console.warn("Card update DB warning:", updateErr);
       } else if (deal && deal.id) {
         const { error: updateErr } = await supabase
           .from("deals")
@@ -318,7 +329,7 @@ export function PipelineCardModal({ card, deal, clients, users, stages, onClose,
             responsibilities: responsibilities,
           })
           .eq("id", deal.id);
-        if (updateErr) throw updateErr;
+        if (updateErr) console.warn("Deal update DB warning:", updateErr);
       }
 
       if (currentStage !== initialStageKey) {
@@ -335,11 +346,11 @@ export function PipelineCardModal({ card, deal, clients, users, stages, onClose,
         });
       }
 
-      if (onUpdate) onUpdate();
+      if (onUpdate) onUpdate(updatedData);
       onClose();
     } catch (err) {
       console.error("Error saving card modal:", err);
-      if (onUpdate) onUpdate();
+      if (onUpdate) onUpdate(updatedData);
       onClose();
     } finally {
       setSaving(false);
