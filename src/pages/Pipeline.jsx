@@ -70,10 +70,25 @@ export default function Pipeline() {
   const [addingCardStage, setAddingCardStage] = useState(null); // stage key or stage id
   const [quickTitle, setQuickTitle] = useState("");
   const [quickValue, setQuickValue] = useState("");
-  const [quickScript, setQuickScript] = useState("Rahmat");
-  const [quickVoice, setQuickVoice] = useState("Maaz");
-  const [quickEditing, setQuickEditing] = useState("Usama");
-  const [quickThumbnail, setQuickThumbnail] = useState("Rahmat");
+  const [quickTargetStage, setQuickTargetStage] = useState("");
+  const [quickResponsibilities, setQuickResponsibilities] = useState([
+    { role: "Script", person: "Rahmat" },
+    { role: "Voice Over", person: "Maaz" },
+  ]);
+
+  function handleAddQuickResp() {
+    setQuickResponsibilities((prev) => [...prev, { role: "", person: "" }]);
+  }
+
+  function handleUpdateQuickResp(index, field, value) {
+    setQuickResponsibilities((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  }
+
+  function handleRemoveQuickResp(index) {
+    setQuickResponsibilities((prev) => prev.filter((_, i) => i !== index));
+  }
 
   // Far-right New Stage List Inline Form
   const [showAddStageInput, setShowAddStageInput] = useState(false);
@@ -218,20 +233,26 @@ export default function Pipeline() {
 
     const val = Number(quickValue) || 0;
     const titleText = quickTitle.trim();
-    const respObj = {
-      script: quickScript || "Rahmat",
-      voiceOver: quickVoice || "Maaz",
-      videoEditing: quickEditing || "Usama",
-      thumbnail: quickThumbnail || "Rahmat",
-    };
+    const targetStage = quickTargetStage || stageKeyOrId;
+
+    const filteredResp = quickResponsibilities.filter(
+      (r) => r.role.trim() || r.person.trim()
+    );
+    const respArray =
+      filteredResp.length > 0
+        ? filteredResp
+        : [
+            { role: "Script", person: "Rahmat" },
+            { role: "Voice Over", person: "Maaz" },
+          ];
 
     if (selectedPipelineId === "default") {
       const newDealObj = {
         id: `deal-${Date.now()}`,
         title: titleText,
-        stage: stageKeyOrId,
+        stage: targetStage,
         value: val,
-        responsibilities: respObj,
+        responsibilities: respArray,
         clients: { name: clients[0]?.name || "Elevatech Client", company_name: clients[0]?.company_name || "Elevatech" },
         checklist: [
           { id: 1, text: "Script ready for Voiceover", completed: true },
@@ -252,7 +273,7 @@ export default function Pipeline() {
         await supabase.from("deals").insert([
           {
             title: titleText,
-            stage: stageKeyOrId,
+            stage: targetStage,
             client_id: clientId,
             value: val,
           },
@@ -263,10 +284,10 @@ export default function Pipeline() {
     } else {
       const newCardObj = {
         id: `card-${Date.now()}`,
-        stage_id: stageKeyOrId,
+        stage_id: targetStage,
         card_title: titleText,
         card_value: val,
-        responsibilities: respObj,
+        responsibilities: respArray,
         checklist: [
           { id: 1, text: "Script ready for Voiceover", completed: true },
           { id: 2, text: "Voiceover ready and approved", completed: true },
@@ -284,7 +305,7 @@ export default function Pipeline() {
       try {
         await supabase.from("pipeline_cards").insert([
           {
-            stage_id: stageKeyOrId,
+            stage_id: targetStage,
             card_title: titleText,
             card_value: val,
           },
@@ -297,6 +318,11 @@ export default function Pipeline() {
     setQuickTitle("");
     setQuickValue("");
     setAddingCardStage(null);
+    setQuickTargetStage("");
+    setQuickResponsibilities([
+      { role: "Script", person: "Rahmat" },
+      { role: "Voice Over", person: "Maaz" },
+    ]);
   }
 
   // Handle Add Stage / List Column at Far Right
@@ -529,10 +555,26 @@ export default function Pipeline() {
                             {d.clients?.company_name || d.clients?.name || "Elevatech Client"}
                           </p>
 
-                          {/* Responsibilities Tags (Trello Card Style) */}
+                          {/* Responsibilities Tags (Dynamic Trello Card Style) */}
                           <div className="flex flex-wrap gap-1 pt-0.5">
-                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">Script: Rahmat</span>
-                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">Voice: Maaz</span>
+                            {Array.isArray(d.responsibilities) ? (
+                              d.responsibilities.map((resp, i) => (
+                                <span key={i} className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-medium">
+                                  {resp.role}: {resp.person}
+                                </span>
+                              ))
+                            ) : typeof d.responsibilities === "object" && d.responsibilities !== null ? (
+                              Object.entries(d.responsibilities).map(([role, person], i) => (
+                                <span key={i} className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-medium capitalize">
+                                  {role}: {person}
+                                </span>
+                              ))
+                            ) : (
+                              <>
+                                <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-medium">Script: Rahmat</span>
+                                <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-medium">Voice: Maaz</span>
+                              </>
+                            )}
                           </div>
 
                           <div className="flex items-center justify-between pt-1.5 border-t border-line/60">
@@ -555,10 +597,24 @@ export default function Pipeline() {
                     )}
                   </div>
 
-                  {/* In-Column "+ Add a card" Button */}
+                  {/* In-Column "+ Add a card" Button & Dynamic Form */}
                   <div className="mt-3 pt-2 border-t border-line/60">
                     {addingCardStage === stage.key ? (
                       <div className="space-y-2 bg-paper p-2.5 rounded-xl border border-accent/40 shadow-xs">
+                        <div>
+                          <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Target Stage</label>
+                          <select
+                            value={quickTargetStage || stage.key}
+                            onChange={(e) => setQuickTargetStage(e.target.value)}
+                            className="w-full text-xs px-2 py-1 border border-line rounded-lg bg-white font-semibold focus:outline-none"
+                          >
+                            {defaultStageList.map((s) => (
+                              <option key={s.key} value={s.key}>
+                                {s.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <div>
                           <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Card Title</label>
                           <input
@@ -581,29 +637,47 @@ export default function Pipeline() {
                             className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <div>
-                            <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Script Lead</label>
-                            <input
-                              type="text"
-                              value={quickScript}
-                              onChange={(e) => setQuickScript(e.target.value)}
-                              placeholder="e.g. Rahmat"
-                              className="w-full text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
-                            />
+
+                        {/* Dynamic Team Responsibilities */}
+                        <div className="space-y-1.5 pt-1 border-t border-line/60">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-ink/60 uppercase block">Team Leads / Roles</label>
+                            <button
+                              type="button"
+                              onClick={handleAddQuickResp}
+                              className="text-[10px] font-bold text-accent hover:underline cursor-pointer"
+                            >
+                              + Add Role
+                            </button>
                           </div>
-                          <div>
-                            <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Voice Over</label>
-                            <input
-                              type="text"
-                              value={quickVoice}
-                              onChange={(e) => setQuickVoice(e.target.value)}
-                              placeholder="e.g. Maaz"
-                              className="w-full text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
-                            />
-                          </div>
+                          {quickResponsibilities.map((resp, idx) => (
+                            <div key={idx} className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={resp.role}
+                                onChange={(e) => handleUpdateQuickResp(idx, "role", e.target.value)}
+                                placeholder="Role (e.g. Script)"
+                                className="w-1/2 text-[10px] px-1.5 py-1 border border-line rounded bg-white font-medium focus:outline-none focus:ring-1 focus:ring-accent"
+                              />
+                              <input
+                                type="text"
+                                value={resp.person}
+                                onChange={(e) => handleUpdateQuickResp(idx, "person", e.target.value)}
+                                placeholder="Person (e.g. Rahmat)"
+                                className="w-1/2 text-[10px] px-1.5 py-1 border border-line rounded bg-white font-medium focus:outline-none focus:ring-1 focus:ring-accent"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveQuickResp(idx)}
+                                className="text-ink/40 hover:text-red-500 text-xs px-1 cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex gap-2 pt-1">
+
+                        <div className="flex gap-2 pt-2 border-t border-line/60">
                           <button
                             onClick={() => handleQuickAddCard(stage.key)}
                             className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1 shadow-2xs cursor-pointer"
@@ -612,6 +686,13 @@ export default function Pipeline() {
                           </button>
                           <button
                             onClick={() => setAddingCardStage(null)}
+                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
                             className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
                           >
                             Cancel
@@ -691,10 +772,26 @@ export default function Pipeline() {
                             {card.card_title}
                           </p>
                           
-                          {/* Responsibilities Tags (Trello Card Style) */}
+                          {/* Responsibilities Tags (Dynamic Trello Card Style) */}
                           <div className="flex flex-wrap gap-1 pt-0.5">
-                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">Script: Rahmat</span>
-                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">Voice: Maaz</span>
+                            {Array.isArray(card.responsibilities) ? (
+                              card.responsibilities.map((resp, i) => (
+                                <span key={i} className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-medium">
+                                  {resp.role}: {resp.person}
+                                </span>
+                              ))
+                            ) : typeof card.responsibilities === "object" && card.responsibilities !== null ? (
+                              Object.entries(card.responsibilities).map(([role, person], i) => (
+                                <span key={i} className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-medium capitalize">
+                                  {role}: {person}
+                                </span>
+                              ))
+                            ) : (
+                              <>
+                                <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-medium">Script: Rahmat</span>
+                                <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-medium">Voice: Maaz</span>
+                              </>
+                            )}
                           </div>
 
                           <div className="flex items-center justify-between pt-1.5 border-t border-line/60">
@@ -716,10 +813,24 @@ export default function Pipeline() {
                     )}
                   </div>
 
-                  {/* In-Column "+ Add a card" Button */}
+                  {/* In-Column "+ Add a card" Button & Dynamic Form */}
                   <div className="mt-3 pt-2 border-t border-line/60">
                     {addingCardStage === stage.id ? (
                       <div className="space-y-2 bg-paper p-2.5 rounded-xl border border-accent/40 shadow-xs">
+                        <div>
+                          <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Target Stage</label>
+                          <select
+                            value={quickTargetStage || stage.id}
+                            onChange={(e) => setQuickTargetStage(e.target.value)}
+                            className="w-full text-xs px-2 py-1 border border-line rounded-lg bg-white font-semibold focus:outline-none"
+                          >
+                            {customStages.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                #{s.stage_order} {s.stage_name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <div>
                           <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Card Title</label>
                           <input
@@ -742,29 +853,47 @@ export default function Pipeline() {
                             className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <div>
-                            <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Script Lead</label>
-                            <input
-                              type="text"
-                              value={quickScript}
-                              onChange={(e) => setQuickScript(e.target.value)}
-                              placeholder="e.g. Rahmat"
-                              className="w-full text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
-                            />
+
+                        {/* Dynamic Team Responsibilities */}
+                        <div className="space-y-1.5 pt-1 border-t border-line/60">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-ink/60 uppercase block">Team Leads / Roles</label>
+                            <button
+                              type="button"
+                              onClick={handleAddQuickResp}
+                              className="text-[10px] font-bold text-accent hover:underline cursor-pointer"
+                            >
+                              + Add Role
+                            </button>
                           </div>
-                          <div>
-                            <label className="text-[10px] font-bold text-ink/60 uppercase block mb-1">Voice Over</label>
-                            <input
-                              type="text"
-                              value={quickVoice}
-                              onChange={(e) => setQuickVoice(e.target.value)}
-                              placeholder="e.g. Maaz"
-                              className="w-full text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
-                            />
-                          </div>
+                          {quickResponsibilities.map((resp, idx) => (
+                            <div key={idx} className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={resp.role}
+                                onChange={(e) => handleUpdateQuickResp(idx, "role", e.target.value)}
+                                placeholder="Role (e.g. Script)"
+                                className="w-1/2 text-[10px] px-1.5 py-1 border border-line rounded bg-white font-medium focus:outline-none focus:ring-1 focus:ring-accent"
+                              />
+                              <input
+                                type="text"
+                                value={resp.person}
+                                onChange={(e) => handleUpdateQuickResp(idx, "person", e.target.value)}
+                                placeholder="Person (e.g. Rahmat)"
+                                className="w-1/2 text-[10px] px-1.5 py-1 border border-line rounded bg-white font-medium focus:outline-none focus:ring-1 focus:ring-accent"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveQuickResp(idx)}
+                                className="text-ink/40 hover:text-red-500 text-xs px-1 cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex gap-2 pt-1">
+
+                        <div className="flex gap-2 pt-2 border-t border-line/60">
                           <button
                             onClick={() => handleQuickAddCard(stage.id)}
                             className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1 shadow-2xs cursor-pointer"
@@ -773,6 +902,13 @@ export default function Pipeline() {
                           </button>
                           <button
                             onClick={() => setAddingCardStage(null)}
+                            className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
                             className="text-ink/60 text-[11px] hover:text-ink px-2 py-1 cursor-pointer"
                           >
                             Cancel
