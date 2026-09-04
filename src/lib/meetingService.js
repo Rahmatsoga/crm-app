@@ -11,7 +11,7 @@ export const SAMPLE_MEETINGS = [
     client_phone: "+1 (555) 234-5678",
     start_time: new Date(Date.now() + 3600000 * 2).toISOString(),
     end_time: new Date(Date.now() + 3600000 * 3).toISOString(),
-    zoom_join_url: "https://zoom.us/j/9876543210?pwd=ElevatechDemoZoomKey",
+    zoom_join_url: "https://zoom.us/join",
     google_calendar_url: "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Discovery+Call+Apex+Dental",
     host_name: "Rahmat (Admin)",
     status: "scheduled",
@@ -25,7 +25,7 @@ export const SAMPLE_MEETINGS = [
     client_phone: "+1 (555) 987-6543",
     start_time: new Date(Date.now() + 3600000 * 24).toISOString(),
     end_time: new Date(Date.now() + 3600000 * 25).toISOString(),
-    zoom_join_url: "https://zoom.us/j/8765432109?pwd=ElevatechVoiceoverKey",
+    zoom_join_url: "https://zoom.us/join",
     google_calendar_url: "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Voiceover+Review+SaaSify",
     host_name: "Maaz (Sales)",
     status: "scheduled",
@@ -45,7 +45,7 @@ export function generateGoogleCalendarUrl({ title, description, startTime, endTi
     action: "TEMPLATE",
     text: title || "Elevatech CRM Discovery Call",
     details: description || "Scheduled via Elevatech Software House CRM",
-    location: location || "Zoom HD Meeting",
+    location: location || "https://zoom.us/join",
     dates: `${start}/${end}`,
   });
 
@@ -53,10 +53,11 @@ export function generateGoogleCalendarUrl({ title, description, startTime, endTi
 }
 
 // Helper to generate Zoom Join Link
-export function generateZoomMeetingUrl(meetingTitle) {
-  const randomMeetingId = Math.floor(1000000000 + Math.random() * 9000000000);
-  const randomPasscode = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `https://zoom.us/j/${randomMeetingId}?pwd=${randomPasscode}`;
+export function generateZoomMeetingUrl(meetingTitle, customZoomUrl) {
+  if (customZoomUrl && customZoomUrl.trim()) {
+    return customZoomUrl.trim();
+  }
+  return "https://zoom.us/join";
 }
 
 // Schedule New Meeting Function
