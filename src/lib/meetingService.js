@@ -56,15 +56,18 @@ export function generateGoogleCalendarUrl({ title, description, startTime, endTi
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-// Helper to generate Live Video Join Link (WebRTC Live Room or Custom Zoom URL)
+// Helper to generate Zoom Join Link
 export function generateZoomMeetingUrl(meetingTitle, customZoomUrl) {
   if (customZoomUrl && customZoomUrl.trim()) {
     return customZoomUrl.trim();
   }
-  const roomName = (meetingTitle || "Discovery Call")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(0, 30);
-  return `https://meet.jit.si/ElevatechCRM-${roomName || "LiveMeeting"}`;
+  return "https://zoom.us/join";
+}
+
+// Helper for instant 1-click open WebRTC video room (no login/moderator required)
+export function generateInstantVideoUrl() {
+  const roomHash = Math.random().toString(36).substring(2, 10);
+  return `https://meet.jit.si/room-${roomHash}`;
 }
 
 // Schedule New Meeting Function
