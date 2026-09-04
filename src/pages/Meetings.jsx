@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getMeetings, scheduleMeeting, generateGoogleCalendarUrl, generateZoomMeetingUrl, SAMPLE_MEETINGS } from "../lib/meetingService";
+import { getMeetings, scheduleMeeting, generateGoogleCalendarUrl, generateZoomMeetingUrl, generateInstantVideoUrl, SAMPLE_MEETINGS } from "../lib/meetingService";
 import { sendSMS, sendWhatsApp } from "../lib/twilioService";
 import { supabase } from "../lib/supabaseClient";
 
@@ -469,20 +469,30 @@ export default function Meetings() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               <a
-                href={m.zoom_join_url || generateZoomMeetingUrl(m.title)}
+                href={generateInstantVideoUrl()}
                 target="_blank"
                 rel="noreferrer"
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                title="Launch instant live video call in browser (no login required)"
               >
-                <span>📹</span> Join Zoom
+                <span>⚡</span> 1-Click Live Call
+              </a>
+              <a
+                href={m.zoom_join_url && m.zoom_join_url.includes("zoom.us") ? m.zoom_join_url : "https://zoom.us/join"}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                title="Open Zoom Join Portal"
+              >
+                <span>📹</span> Zoom Join
               </a>
               <a
                 href={m.google_calendar_url || generateGoogleCalendarUrl({ title: m.title, startTime: m.start_time })}
                 target="_blank"
                 rel="noreferrer"
-                className="bg-paper border border-line text-ink font-semibold text-xs px-3.5 py-2.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                className="bg-paper border border-line text-ink font-semibold text-xs px-3 py-2.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
                 <span>📅</span> Google Cal
               </a>
