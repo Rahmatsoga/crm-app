@@ -15,20 +15,18 @@ const INITIAL_DEFAULT_STAGES = [
 
 const DEFAULT_SAMPLE_DEALS = [
   {
-    id: "deal-sample-1",
-    title: "Voice AI Appointment Assistant",
-    stage: "proposal",
-    value: 50000,
-    clients: { name: "Sarah Johnson", company_name: "Apex Dental Group" },
+    id: "deal-sample-new",
+    title: "AI Voice Bot & Lead Intake Engine",
+    stage: "new",
+    value: 35000,
+    responsibilities: [
+      { role: "Script", person: "Rahmat" },
+      { role: "Voice Over", person: "Maaz" }
+    ],
+    clients: { name: "Alex Rivera", company_name: "NexGen Healthcare" },
     checklist: [
-      { id: 1, text: "Script ready for Voiceover", completed: true },
-      { id: 2, text: "Voiceover ready and approved", completed: true },
-      { id: 3, text: "Milestone created / Payment entered", completed: false },
-      { id: 4, text: "Video ready", completed: false },
-      { id: 5, text: "Video approved", completed: false },
-      { id: 6, text: "Thumbnail ready", completed: false },
-      { id: 7, text: "Video published", completed: false },
-      { id: 8, text: "Performance Check after 7/30 days", completed: false },
+      { id: 1, text: "Initial Requirements Gathered", completed: true },
+      { id: 2, text: "Scope Document Created", completed: false },
     ],
   },
   {
@@ -36,6 +34,10 @@ const DEFAULT_SAMPLE_DEALS = [
     title: "Multi-Channel Lead Triage Engine",
     stage: "contacted",
     value: 75000,
+    responsibilities: [
+      { role: "Script", person: "Rahmat" },
+      { role: "Voice Over", person: "Maaz" }
+    ],
     clients: { name: "Jessica Lee", company_name: "SaaSify Scale" },
     checklist: [
       { id: 1, text: "Requirements Gathered", completed: true },
@@ -44,14 +46,65 @@ const DEFAULT_SAMPLE_DEALS = [
     ],
   },
   {
+    id: "deal-sample-1",
+    title: "Voice AI Appointment Assistant",
+    stage: "proposal",
+    value: 50000,
+    responsibilities: [
+      { role: "Script", person: "Rahmat" },
+      { role: "Voice Over", person: "Maaz" }
+    ],
+    clients: { name: "Sarah Johnson", company_name: "Apex Dental Group" },
+    checklist: [
+      { id: 1, text: "Script ready for Voiceover", completed: true },
+      { id: 2, text: "Voiceover ready and approved", completed: true },
+      { id: 3, text: "Milestone created / Payment entered", completed: false },
+      { id: 4, text: "Video ready", completed: false },
+    ],
+  },
+  {
     id: "deal-sample-3",
-    title: "Enterprise Web Scraper & GHL Data Sync",
+    title: "Enterprise Web Scraper & GHL Sync",
     stage: "negotiation",
     value: 60000,
+    responsibilities: [
+      { role: "Script", person: "Rahmat" },
+      { role: "Voice Over", person: "Maaz" }
+    ],
     clients: { name: "Mike Chen", company_name: "Vanguard Real Estate" },
     checklist: [
       { id: 1, text: "Data Schema Mapped", completed: true },
       { id: 2, text: "GHL OAuth Configured", completed: false },
+    ],
+  },
+  {
+    id: "deal-sample-won",
+    title: "Custom CRM & WhatsApp Automation",
+    stage: "won",
+    value: 120000,
+    responsibilities: [
+      { role: "Script", person: "Rahmat" },
+      { role: "Voice Over", person: "Maaz" },
+      { role: "Thumbnail", person: "Maaz" }
+    ],
+    clients: { name: "David Vance", company_name: "Elevatech Enterprise" },
+    checklist: [
+      { id: 1, text: "Contract Signed", completed: true },
+      { id: 2, text: "Deposit Received", completed: true },
+      { id: 3, text: "System Deployed & Live", completed: true },
+    ],
+  },
+  {
+    id: "deal-sample-lost",
+    title: "Legacy Database Migration",
+    stage: "lost",
+    value: 25000,
+    responsibilities: [
+      { role: "Script", person: "Rahmat" }
+    ],
+    clients: { name: "Robert Taylor", company_name: "OldTech Solutions" },
+    checklist: [
+      { id: 1, text: "Budget Exceeded", completed: false },
     ],
   },
 ];
@@ -553,7 +606,7 @@ export default function Pipeline() {
               return (
                 <div
                   key={stage.key}
-                  className="bg-white border border-line rounded-2xl p-3 min-w-[270px] w-[280px] flex-shrink-0 flex flex-col shadow-xs"
+                  className="bg-white border border-line rounded-2xl p-3 min-w-[220px] max-w-[260px] flex-1 flex-shrink-0 flex flex-col shadow-xs"
                 >
                   {/* Editable Stage Header */}
                   <div className="flex items-center justify-between px-1 mb-3 pb-2 border-b border-line/60">
@@ -763,7 +816,7 @@ export default function Pipeline() {
               return (
                 <div
                   key={stage.id}
-                  className="bg-white border border-line rounded-2xl p-3 min-w-[270px] w-[280px] flex-shrink-0 flex flex-col shadow-xs"
+                  className="bg-white border border-line rounded-2xl p-3 min-w-[220px] max-w-[260px] flex-1 flex-shrink-0 flex flex-col shadow-xs"
                 >
                   <div className="flex items-center justify-between px-1 mb-3 pb-2 border-b border-line/60">
                     <div className="flex items-center gap-2 flex-1 pr-2">
