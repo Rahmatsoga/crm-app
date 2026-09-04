@@ -680,10 +680,32 @@ export default function Pipeline() {
                             <p className="text-xs font-bold text-accent">
                               {d.value ? `$${Number(d.value).toLocaleString()}` : "$0"}
                             </p>
-                            {/* Checklist Summary Badge */}
-                            <span className="text-[10px] bg-accent/10 text-accent font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <span>☑</span> {summary.completed}/{summary.total} ({summary.percent}%)
-                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                              {/* Quick Move Next Stage Button on Kanban Card */}
+                              {(() => {
+                                const currentIdx = defaultStageList.findIndex((s) => s.key === stage.key);
+                                const nextStage = currentIdx >= 0 && currentIdx < defaultStageList.length - 1 ? defaultStageList[currentIdx + 1] : null;
+                                return nextStage ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      moveStage(d.id, nextStage.key);
+                                    }}
+                                    className="text-[10px] font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white px-1.5 py-0.5 rounded transition flex items-center gap-0.5 cursor-pointer"
+                                    title={`Advance to ${nextStage.label}`}
+                                  >
+                                    <span>➡️ {nextStage.label}</span>
+                                  </button>
+                                ) : null;
+                              })()}
+
+                              {/* Checklist Summary Badge */}
+                              <span className="text-[10px] bg-accent/10 text-accent font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                <span>☑</span> {summary.completed}/{summary.total} ({summary.percent}%)
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -890,9 +912,31 @@ export default function Pipeline() {
                             <p className="text-xs font-bold text-accent">
                               {card.card_value ? `$${Number(card.card_value).toLocaleString()}` : "$0"}
                             </p>
-                            <span className="text-[10px] bg-accent/10 text-accent font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <span>☑</span> {summary.completed}/{summary.total} ({summary.percent}%)
-                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                              {/* Quick Move Next Stage Button on Custom Card */}
+                              {(() => {
+                                const currentIdx = customStages.findIndex((s) => s.id === stage.id);
+                                const nextStage = currentIdx >= 0 && currentIdx < customStages.length - 1 ? customStages[currentIdx + 1] : null;
+                                return nextStage ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      moveCustomCardStage(card.id, nextStage.id);
+                                    }}
+                                    className="text-[10px] font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white px-1.5 py-0.5 rounded transition flex items-center gap-0.5 cursor-pointer"
+                                    title={`Advance to ${nextStage.stage_name}`}
+                                  >
+                                    <span>➡️ {nextStage.stage_name}</span>
+                                  </button>
+                                ) : null;
+                              })()}
+
+                              <span className="text-[10px] bg-accent/10 text-accent font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                <span>☑</span> {summary.completed}/{summary.total} ({summary.percent}%)
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1072,6 +1116,7 @@ export default function Pipeline() {
           deal={selectedDeal}
           clients={clients}
           users={users}
+          stages={selectedPipelineId === "default" ? defaultStageList : customStages}
           onClose={() => {
             setSelectedCard(null);
             setSelectedDeal(null);
