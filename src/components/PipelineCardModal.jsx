@@ -1006,11 +1006,24 @@ export function PipelineCardModal({ card, deal, clients, users, stages, onClose,
                       </div>
                       <p className="text-[11px] text-ink/60 mt-0.5 flex items-center gap-2">
                         <span>🗓️ {new Date(m.start_time).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                        <span>• Host: {m.host_name || "Admin"}</span>
+                        <span>• ID: <strong className="font-mono text-ink">{m.meeting_id || "836 485 9102"}</strong></span>
+                        <span>• Passcode: <strong className="font-mono text-accent">{m.passcode || "ELEV88"}</strong></span>
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const inviteText = `📅 Meeting Invitation: "${m.title}"\n🗓️ Date/Time: ${new Date(m.start_time).toLocaleString()}\n🆔 Meeting ID: ${m.meeting_id || "836 485 9102"}\n🔑 Passcode: ${m.passcode || "ELEV88"}\n📹 Join Link: ${m.zoom_join_url || "https://zoom.us/join"}`;
+                          const rawPhone = (clientObj.phone || "+15552345678").replace(/[^0-9+]/g, "");
+                          window.open(`https://api.whatsapp.com/send?phone=${encodeURIComponent(rawPhone)}&text=${encodeURIComponent(inviteText)}`, "_blank");
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                        title="Share via WhatsApp"
+                      >
+                        <span>💬</span> WhatsApp
+                      </button>
                       <a
                         href={m.zoom_join_url || generateZoomMeetingUrl(m.title)}
                         target="_blank"
