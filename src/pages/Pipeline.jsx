@@ -70,6 +70,10 @@ export default function Pipeline() {
   const [addingCardStage, setAddingCardStage] = useState(null); // stage key or stage id
   const [quickTitle, setQuickTitle] = useState("");
   const [quickValue, setQuickValue] = useState("");
+  const [quickScript, setQuickScript] = useState("Rahmat");
+  const [quickVoice, setQuickVoice] = useState("Maaz");
+  const [quickEditing, setQuickEditing] = useState("Usama");
+  const [quickThumbnail, setQuickThumbnail] = useState("Rahmat");
 
   // Far-right New Stage List Inline Form
   const [showAddStageInput, setShowAddStageInput] = useState(false);
@@ -214,6 +218,12 @@ export default function Pipeline() {
 
     const val = Number(quickValue) || 0;
     const titleText = quickTitle.trim();
+    const respObj = {
+      script: quickScript || "Rahmat",
+      voiceOver: quickVoice || "Maaz",
+      videoEditing: quickEditing || "Usama",
+      thumbnail: quickThumbnail || "Rahmat",
+    };
 
     if (selectedPipelineId === "default") {
       const newDealObj = {
@@ -221,17 +231,22 @@ export default function Pipeline() {
         title: titleText,
         stage: stageKeyOrId,
         value: val,
+        responsibilities: respObj,
         clients: { name: clients[0]?.name || "Elevatech Client", company_name: clients[0]?.company_name || "Elevatech" },
         checklist: [
-          { id: 1, text: "Requirements Gathered", completed: true },
-          { id: 2, text: "Development & Testing", completed: false },
+          { id: 1, text: "Script ready for Voiceover", completed: true },
+          { id: 2, text: "Voiceover ready and approved", completed: true },
+          { id: 3, text: "Milestone created / Payment entered", completed: false },
+          { id: 4, text: "Video ready", completed: false },
+          { id: 5, text: "Video approved", completed: false },
+          { id: 6, text: "Thumbnail ready", completed: false },
+          { id: 7, text: "Video published", completed: false },
+          { id: 8, text: "Performance Check after 7/30 days", completed: false },
         ],
       };
 
-      // 1. Instant local update
       setDeals((prev) => [newDealObj, ...prev]);
 
-      // 2. Supabase insert
       try {
         const clientId = clients[0]?.id || null;
         await supabase.from("deals").insert([
@@ -251,16 +266,21 @@ export default function Pipeline() {
         stage_id: stageKeyOrId,
         card_title: titleText,
         card_value: val,
+        responsibilities: respObj,
         checklist: [
-          { id: 1, text: "Requirements Gathered", completed: true },
-          { id: 2, text: "Development & Testing", completed: false },
+          { id: 1, text: "Script ready for Voiceover", completed: true },
+          { id: 2, text: "Voiceover ready and approved", completed: true },
+          { id: 3, text: "Milestone created / Payment entered", completed: false },
+          { id: 4, text: "Video ready", completed: false },
+          { id: 5, text: "Video approved", completed: false },
+          { id: 6, text: "Thumbnail ready", completed: false },
+          { id: 7, text: "Video published", completed: false },
+          { id: 8, text: "Performance Check after 7/30 days", completed: false },
         ],
       };
 
-      // 1. Instant local update
       setCustomCards((prev) => [...prev, newCardObj]);
 
-      // 2. Supabase insert
       try {
         await supabase.from("pipeline_cards").insert([
           {
@@ -451,34 +471,6 @@ export default function Pipeline() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 mb-6 border-b border-line pb-3 overflow-x-auto">
-        <button
-          onClick={() => setSelectedPipelineId("default")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-            selectedPipelineId === "default"
-              ? "bg-ink text-white shadow-xs"
-              : "bg-paper text-ink/70 hover:text-ink border border-line"
-          }`}
-        >
-          Default Deals Pipeline
-        </button>
-
-        {customPipelines.map((cp) => (
-          <button
-            key={cp.id}
-            onClick={() => setSelectedPipelineId(cp.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              selectedPipelineId === cp.id
-                ? "bg-accent text-white shadow-xs"
-                : "bg-paper text-ink/70 hover:text-ink border border-line"
-            }`}
-          >
-            {cp.pipeline_name} ({cp.stage_count} stages)
-          </button>
-        ))}
-      </div>
-
       {/* Main Board View: Horizontal Scrollable Columns */}
       <div className="flex gap-4 overflow-x-auto pb-6 custom-scrollbar min-h-[450px]">
         {selectedPipelineId === "default" ? (
@@ -566,13 +558,13 @@ export default function Pipeline() {
                   {/* In-Column "+ Add a card" Button */}
                   <div className="mt-3 pt-2 border-t border-line/60">
                     {addingCardStage === stage.key ? (
-                      <div className="space-y-2 bg-paper p-2 rounded-xl border border-accent/40">
+                      <div className="space-y-2 bg-paper p-2.5 rounded-xl border border-accent/40 shadow-xs">
                         <input
                           type="text"
                           value={quickTitle}
                           onChange={(e) => setQuickTitle(e.target.value)}
-                          placeholder="Card title (e.g. Voice AI)"
-                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
+                          placeholder="Card title (e.g. 070 Sea Disasters)"
+                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent font-semibold"
                           autoFocus
                           onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.key)}
                         />
@@ -582,12 +574,27 @@ export default function Pipeline() {
                           onChange={(e) => setQuickValue(e.target.value)}
                           placeholder="Value ($)"
                           className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
-                          onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.key)}
                         />
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <input
+                            type="text"
+                            value={quickScript}
+                            onChange={(e) => setQuickScript(e.target.value)}
+                            placeholder="Script: Rahmat"
+                            className="text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            value={quickVoice}
+                            onChange={(e) => setQuickVoice(e.target.value)}
+                            placeholder="Voice: Maaz"
+                            className="text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-1">
                           <button
                             onClick={() => handleQuickAddCard(stage.key)}
-                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1"
+                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1 shadow-2xs"
                           >
                             Add Card
                           </button>
@@ -700,13 +707,13 @@ export default function Pipeline() {
                   {/* In-Column "+ Add a card" Button */}
                   <div className="mt-3 pt-2 border-t border-line/60">
                     {addingCardStage === stage.id ? (
-                      <div className="space-y-2 bg-paper p-2 rounded-xl border border-accent/40">
+                      <div className="space-y-2 bg-paper p-2.5 rounded-xl border border-accent/40 shadow-xs">
                         <input
                           type="text"
                           value={quickTitle}
                           onChange={(e) => setQuickTitle(e.target.value)}
-                          placeholder="Card title (e.g. Voice AI)"
-                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
+                          placeholder="Card title (e.g. 070 Sea Disasters)"
+                          className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent font-semibold"
                           autoFocus
                           onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.id)}
                         />
@@ -716,12 +723,27 @@ export default function Pipeline() {
                           onChange={(e) => setQuickValue(e.target.value)}
                           placeholder="Value ($)"
                           className="w-full text-xs px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-accent"
-                          onKeyDown={(e) => e.key === "Enter" && handleQuickAddCard(stage.id)}
                         />
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <input
+                            type="text"
+                            value={quickScript}
+                            onChange={(e) => setQuickScript(e.target.value)}
+                            placeholder="Script: Rahmat"
+                            className="text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            value={quickVoice}
+                            onChange={(e) => setQuickVoice(e.target.value)}
+                            placeholder="Voice: Maaz"
+                            className="text-[11px] px-2 py-1 border border-line rounded-lg bg-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-1">
                           <button
                             onClick={() => handleQuickAddCard(stage.id)}
-                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1"
+                            className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition flex-1 shadow-2xs"
                           >
                             Add Card
                           </button>
