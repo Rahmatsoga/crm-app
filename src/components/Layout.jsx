@@ -10,6 +10,7 @@ const navItems = [
   },
   { to: "/clients", label: "Clients", roles: ["admin", "sales", "support"] },
   { to: "/pipeline", label: "Pipeline", roles: ["admin", "sales"] },
+  { to: "/meetings", label: "Meetings", roles: ["admin", "sales", "support"] },
   { to: "/projects", label: "Projects", roles: ["admin", "sales"] },
   { to: "/invoices", label: "Invoices", roles: ["admin", "sales"] },
   { to: "/documents", label: "Documents", roles: ["admin", "sales"] },
