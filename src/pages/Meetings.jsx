@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getMeetings, scheduleMeeting, generateGoogleCalendarUrl, generateZoomMeetingUrl, generateInstantVideoUrl, SAMPLE_MEETINGS } from "../lib/meetingService";
+import { getMeetings, scheduleMeeting, generateGoogleCalendarUrl, generateZoomMeetingUrl, generateInstantVideoUrl, generateGoogleMeetUrl, SAMPLE_MEETINGS } from "../lib/meetingService";
 import { sendSMS, sendWhatsApp } from "../lib/twilioService";
 import { supabase } from "../lib/supabaseClient";
 
@@ -482,9 +482,18 @@ export default function Meetings() {
                 target="_blank"
                 rel="noreferrer"
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                title="Launch instant live video call in browser (no login required)"
+                title="Launch instant live video call in browser (Jitsi WebRTC)"
               >
                 <span>⚡</span> 1-Click Live Call
+              </a>
+              <a
+                href={generateGoogleMeetUrl()}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                title="Open instant Google Meet room"
+              >
+                <span>🎥</span> Google Meet
               </a>
               <a
                 href={m.zoom_join_url && m.zoom_join_url.includes("zoom.us") ? m.zoom_join_url : "https://zoom.us/join"}
