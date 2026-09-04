@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendSMS, sendWhatsApp, logVoIPCall, getCommunicationLogs, triggerStageAutomation } from "../lib/twilioService";
-import { getMeetings, scheduleMeeting, generateGoogleCalendarUrl, generateZoomMeetingUrl } from "../lib/meetingService";
+import { getMeetings, scheduleMeeting, generateGoogleCalendarUrl, generateZoomMeetingUrl, generateInstantVideoUrl, generateGoogleMeetUrl } from "../lib/meetingService";
 
 export function PipelineCardModal({ card, deal, clients, users, stages, onClose, onUpdate }) {
   // Navigation tab: 'overview' | 'twilio' | 'meetings'
@@ -892,20 +892,38 @@ export function PipelineCardModal({ card, deal, clients, users, stages, onClose,
 
               <div className="flex flex-wrap gap-2 pt-2">
                 <a
+                  href={generateInstantVideoUrl()}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                  title="Instant WebRTC Video Room (No setup needed)"
+                >
+                  <span>⚡</span> 1-Click Live Call
+                </a>
+                <a
+                  href={generateGoogleMeetUrl()}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="py-2.5 px-3.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                  title="Instant Google Meet Call"
+                >
+                  <span>🎥</span> Google Meet
+                </a>
+                <a
                   href={generateZoomMeetingUrl(title)}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                  className="py-2.5 px-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
                 >
-                  <span>📹</span> Start Instant Zoom Meeting
+                  <span>📹</span> Zoom Join
                 </a>
                 <a
                   href={generateGoogleCalendarUrl({ title: `Discovery Call — ${title}`, description: "Elevatech CRM Meeting", startTime: new Date().toISOString() })}
                   target="_blank"
                   rel="noreferrer"
-                  className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border border-slate-700 cursor-pointer"
+                  className="py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer"
                 >
-                  <span>📅</span> Open Google Calendar
+                  <span>📅</span> Google Cal
                 </a>
               </div>
             </div>
