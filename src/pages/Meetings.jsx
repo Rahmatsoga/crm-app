@@ -87,13 +87,20 @@ export default function Meetings() {
   }
 
   // Quick WhatsApp Invitation Share
-  async function handleShareWhatsApp(m) {
-    const inviteText = `📅 Elevatech CRM Meeting: "${m.title}"\n🗓️ ${new Date(m.start_time).toLocaleString()}\n🆔 Meeting ID: ${m.meeting_id || "836 485 9102"}\n🔑 Passcode: ${m.passcode || "ELEV88"}\n📹 Zoom: ${m.zoom_join_url || "https://zoom.us/join"}`;
-    await sendWhatsApp({
+  function handleShareWhatsApp(m) {
+    const inviteText = `📅 Meeting Invitation: "${m.title}"\n🗓️ Date/Time: ${new Date(m.start_time).toLocaleString()}\n🆔 Meeting ID: ${m.meeting_id || "836 485 9102"}\n🔑 Passcode: ${m.passcode || "ELEV88"}\n📹 Join Link: ${m.zoom_join_url || "https://zoom.us/join"}\n📅 Google Cal: ${m.google_calendar_url || ""}`;
+
+    const rawPhone = (m.client_phone || "+15552345678").replace(/[^0-9+]/g, "");
+    const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(rawPhone)}&text=${encodeURIComponent(inviteText)}`;
+
+    window.open(waUrl, "_blank");
+
+    sendWhatsApp({
       to: m.client_phone || "+15552345678",
       message_body: inviteText,
     });
-    setSuccessMsg(`🚀 Invitation sent to ${m.client_phone || "client"} via WhatsApp!`);
+
+    setSuccessMsg(`🚀 WhatsApp Web opened with pre-filled meeting invitation for ${m.client_phone || "client"}!`);
     setTimeout(() => setSuccessMsg(""), 4000);
   }
 
